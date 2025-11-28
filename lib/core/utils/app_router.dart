@@ -1,8 +1,8 @@
 import 'package:ai_ruchi/models/recipe.dart';
-import 'package:ai_ruchi/screens/entry_screen/entry_screen.dart';
-import 'package:ai_ruchi/screens/adjust_ingredients_screen.dart';
-import 'package:ai_ruchi/screens/nutrition_detail_screen.dart';
-import 'package:ai_ruchi/screens/recipe_generated_screen.dart';
+import 'package:ai_ruchi/screens/entry/entry_screen.dart';
+import 'package:ai_ruchi/screens/nutrition/nutrition_detail_screen.dart';
+import 'package:ai_ruchi/screens/recipe/adjust_ingredients_screen.dart';
+import 'package:ai_ruchi/screens/recipe/recipe_generated_screen.dart';
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';

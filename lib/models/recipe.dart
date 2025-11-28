@@ -33,8 +33,8 @@ class Recipe {
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
     return Recipe(
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
       ingredients:
           (json['ingredients'] as List<dynamic>?)
               ?.map((e) => RecipeIngredient.fromJson(e))
@@ -45,11 +45,11 @@ class Recipe {
               ?.map((e) => e.toString())
               .toList() ??
           [],
-      prepTime: json['prepTime'] ?? '',
-      cookTime: json['cookTime'] ?? '',
-      servings: json['servings'] ?? '',
-      difficulty: json['difficulty'] ?? '',
-      tips: json['tips'],
+      prepTime: json['prepTime']?.toString() ?? '',
+      cookTime: json['cookTime']?.toString() ?? '',
+      servings: json['servings']?.toString() ?? '',
+      difficulty: json['difficulty']?.toString() ?? '',
+      tips: json['tips']?.toString(),
       nutrition: Nutrition.fromJson(json['nutrition'] ?? {}),
       targetAudience:
           (json['targetAudience'] as List<dynamic>?)
@@ -61,8 +61,8 @@ class Recipe {
               ?.map((e) => e.toString())
               .toList() ??
           [],
-      disclaimer: json['disclaimer'] ?? '',
-      imageUrl: json['imageUrl'],
+      disclaimer: json['disclaimer']?.toString() ?? '',
+      imageUrl: json['imageUrl']?.toString(),
     );
   }
 }
@@ -80,9 +80,9 @@ class RecipeIngredient {
 
   factory RecipeIngredient.fromJson(Map<String, dynamic> json) {
     return RecipeIngredient(
-      name: json['name'] ?? '',
-      amount: json['amount'] ?? '',
-      unit: json['unit'] ?? '',
+      name: json['name']?.toString() ?? '',
+      amount: json['amount']?.toString() ?? '',
+      unit: json['unit']?.toString() ?? '',
     );
   }
 }
@@ -128,7 +128,7 @@ class NutritionValue {
   factory NutritionValue.fromJson(Map<String, dynamic> json) {
     return NutritionValue(
       value: (json['value'] ?? 0).toDouble(),
-      unit: json['unit'] ?? '',
+      unit: json['unit']?.toString() ?? '',
     );
   }
 }
@@ -175,7 +175,7 @@ class MacroNutrient extends NutritionValue {
   factory MacroNutrient.fromJson(Map<String, dynamic> json) {
     return MacroNutrient(
       value: (json['value'] ?? 0).toDouble(),
-      unit: json['unit'] ?? '',
+      unit: json['unit']?.toString() ?? '',
       percentage: (json['percentage'] ?? 0).toDouble(),
     );
   }

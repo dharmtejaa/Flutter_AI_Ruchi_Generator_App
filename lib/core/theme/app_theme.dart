@@ -138,26 +138,26 @@ class AppTheme {
       ),
       titleLarge: TextStyle(
         fontSize: 16.sp,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         color: LightThemeColors.deepBlack,
         fontFamily: 'Poppins',
       ),
       titleMedium: TextStyle(
         fontSize: 14.sp,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         color: LightThemeColors.deepBlack,
         fontFamily: 'Poppins',
       ),
       titleSmall: TextStyle(
         fontSize: 12.sp,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         color: LightThemeColors.darkGray,
         fontFamily: 'Poppins',
       ),
       //used in search field
       bodyLarge: TextStyle(
         fontSize: 16.sp,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         color: LightThemeColors.deepBlack,
         fontFamily: 'Poppins',
       ),
@@ -177,7 +177,7 @@ class AppTheme {
       labelLarge: TextStyle(
         fontSize: 16.sp,
         fontWeight: FontWeight.w600,
-        color: LightThemeColors.pureWhite,
+        color: LightThemeColors.softGrey,
         fontFamily: 'Poppins',
         overflow: TextOverflow.ellipsis,
         letterSpacing: 0.5,
@@ -185,14 +185,14 @@ class AppTheme {
       labelMedium: TextStyle(
         fontSize: 12.sp,
         fontWeight: FontWeight.w500,
-        color: LightThemeColors.deepBlack,
+        color: LightThemeColors.softGrey,
         fontFamily: 'Poppins',
       ),
       //used for very small labels like term and policy
       labelSmall: TextStyle(
         fontSize: 10.sp,
         fontWeight: FontWeight.w500,
-        color: LightThemeColors.deepBlack,
+        color: LightThemeColors.softGrey,
         fontFamily: 'Poppins',
       ),
     ),
@@ -394,26 +394,26 @@ class AppTheme {
       ),
       titleLarge: TextStyle(
         fontSize: 16.sp,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         color: DarkThemeColors.pureWhite,
         fontFamily: 'Poppins',
       ),
       titleMedium: TextStyle(
         fontSize: 14.sp,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         color: DarkThemeColors.lightGray,
         fontFamily: 'Poppins',
       ),
       titleSmall: TextStyle(
         fontSize: 12.sp,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         color: DarkThemeColors.lightGray,
         fontFamily: 'Poppins',
       ),
       //used in search field
       bodyLarge: TextStyle(
         fontSize: 16.sp,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         color: DarkThemeColors.pureWhite,
         fontFamily: 'Poppins',
       ),
@@ -432,7 +432,7 @@ class AppTheme {
       //onPrimary content for primary content
       labelLarge: TextStyle(
         fontSize: 16.sp,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         color: DarkThemeColors.pureWhite,
         fontFamily: 'Poppins',
         overflow: TextOverflow.ellipsis,

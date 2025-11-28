@@ -49,7 +49,7 @@ class DarkThemeColors {
   static const Color priceGreen = Color(0xFF2E7D32); // Price color
 
   // ——— Shadow Colors ———
-  static Color shadowLight = Colors.black.withValues(alpha: 0.07);
+  static Color shadowLight = Colors.black.withValues(alpha: 0.7);
   static Color shadowMedium = Colors.black.withValues(alpha: 0.2);
   static Color shadowHeavy = Colors.black.withValues(alpha: 0.4);
   static Color shadowIntense = Colors.black.withValues(alpha: 0.1);

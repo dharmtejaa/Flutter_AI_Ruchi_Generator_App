@@ -2,7 +2,7 @@ import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/core/utils/ingredient_utils.dart';
 import 'package:ai_ruchi/providers/ingredients_provider.dart';
-import 'package:ai_ruchi/shared/widgets/custom_snackbar.dart';
+import 'package:ai_ruchi/shared/widgets/common/custom_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -78,10 +78,7 @@ final List<PopularIngredient> _defaultPopularIngredients = [
     name: 'Carrot',
     icon: IngredientUtils.getIngredientIcon('carrot'),
   ),
-  PopularIngredient(
-    name: 'Beef',
-    icon: Icons.set_meal,
-  ),
+  PopularIngredient(name: 'Beef', icon: Icons.set_meal),
   PopularIngredient(
     name: 'Cheese',
     icon: IngredientUtils.getIngredientIcon('cheese'),
@@ -133,5 +130,3 @@ class _PopularIngredientButton extends StatelessWidget {
     );
   }
 }
-
-

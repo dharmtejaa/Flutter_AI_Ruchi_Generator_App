@@ -16,31 +16,22 @@ class IngredientHeaderWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
     final provider = context.watch<IngredientsProvider>();
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: AppSizes.paddingLg,
+        //horizontal: AppSizes.paddingMd,
         vertical: AppSizes.vPaddingLg,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: textTheme.displaySmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: colorScheme.onSurface,
-            ),
-          ),
+          Text(title, style: textTheme.displaySmall),
           if (recipeName != null || provider.recipeName.isNotEmpty) ...[
             SizedBox(height: AppSizes.spaceHeightXs),
             Text(
               'for ${recipeName ?? provider.recipeName}',
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
+              style: textTheme.labelLarge,
             ),
           ],
         ],
@@ -48,4 +39,3 @@ class IngredientHeaderWidget extends StatelessWidget {
     );
   }
 }
-

@@ -1,6 +1,6 @@
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/providers/ingredients_provider.dart';
-import 'package:ai_ruchi/shared/widgets/ingredient_card_widget.dart';
+import 'package:ai_ruchi/shared/widgets/ingredient/ingredient_card_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -8,11 +8,7 @@ class CurrentIngredientsSection extends StatelessWidget {
   final String? title;
   final String? emptyMessage;
 
-  const CurrentIngredientsSection({
-    super.key,
-    this.title,
-    this.emptyMessage,
-  });
+  const CurrentIngredientsSection({super.key, this.title, this.emptyMessage});
 
   @override
   Widget build(BuildContext context) {
@@ -23,13 +19,7 @@ class CurrentIngredientsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title ?? 'Current Ingredients',
-          style: textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: colorScheme.onSurface,
-          ),
-        ),
+        Text(title ?? 'Current Ingredients', style: textTheme.headlineSmall),
         SizedBox(height: AppSizes.spaceHeightMd),
         if (provider.currentIngredients.isEmpty)
           Center(
@@ -46,6 +36,7 @@ class CurrentIngredientsSection extends StatelessWidget {
         else
           ...provider.currentIngredients.map(
             (ingredient) => IngredientCardWidget(
+              key: ValueKey(ingredient.id),
               ingredient: ingredient,
             ),
           ),
@@ -53,4 +44,3 @@ class CurrentIngredientsSection extends StatelessWidget {
     );
   }
 }
-

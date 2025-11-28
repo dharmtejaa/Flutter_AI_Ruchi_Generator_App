@@ -1,7 +1,7 @@
 import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/providers/recipe_provider.dart';
-import 'package:ai_ruchi/shared/widgets/custom_button.dart';
+import 'package:ai_ruchi/shared/widgets/common/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -48,7 +48,8 @@ class RecipePreferencesDialog extends StatelessWidget {
                 spacing: AppSizes.spaceSm,
                 runSpacing: AppSizes.spaceHeightSm,
                 children: RecipeProvider.providers.map((provider) {
-                  final isSelected = recipeProvider.selectedProvider == provider;
+                  final isSelected =
+                      recipeProvider.selectedProvider == provider;
                   return _PreferenceChip(
                     label: provider.toUpperCase(),
                     isSelected: isSelected,
@@ -186,5 +187,3 @@ class _PreferenceChip extends StatelessWidget {
     );
   }
 }
-
-

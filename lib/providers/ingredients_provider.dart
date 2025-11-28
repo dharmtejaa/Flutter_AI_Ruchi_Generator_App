@@ -3,40 +3,15 @@ import 'package:ai_ruchi/models/ingredient.dart';
 import 'package:ai_ruchi/core/utils/ingredient_utils.dart';
 
 class IngredientsProvider with ChangeNotifier {
-  List<Ingredient> _currentIngredients = [];
+  final List<Ingredient> _currentIngredients = [];
   List<String> _suggestedAdditions = [];
-  String _recipeName = 'Chicken and Tomato Pasta';
+  String _recipeName = '';
 
   List<Ingredient> get currentIngredients => _currentIngredients;
   List<String> get suggestedAdditions => _suggestedAdditions;
   String get recipeName => _recipeName;
 
   IngredientsProvider() {
-    // Initialize with default ingredients
-    _currentIngredients = [
-      Ingredient(
-        id: '1',
-        name: 'Chicken Breast',
-        quantity: 500,
-        unit: 'g',
-        icon: 'chicken',
-      ),
-      Ingredient(
-        id: '2',
-        name: 'Pasta',
-        quantity: 250,
-        unit: 'g',
-        icon: 'pasta',
-      ),
-      Ingredient(
-        id: '3',
-        name: 'Diced Tomatoes',
-        quantity: 1,
-        unit: 'can',
-        icon: 'tomato',
-      ),
-    ];
-
     // Initialize suggested additions
     _suggestedAdditions = ['Spinach', 'Chili Flakes', 'Lemon', 'Garlic'];
   }

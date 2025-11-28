@@ -14,6 +14,14 @@ class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
   final TextEditingController? confirmPasswordController;
   final VoidCallback? onTap;
+  final TextAlign? textAlign;
+  final double? borderRadius;
+
+  // 💡 NEW: The correct callback for when the 'Enter' key is pressed
+  final ValueChanged<String>? onFieldSubmittedCallback;
+  // 💡 NEW: For managing focus externally
+  final FocusNode? focusNode;
+
   final Color? fillColor;
   final EdgeInsets? contentPadding;
   final int? maxLines;
@@ -21,6 +29,7 @@ class CustomTextField extends StatelessWidget {
   final double? width;
   final ValueNotifier<bool>? isObscureNotifier; // 🔁 ValueNotifier
   final bool? enabled;
+
   const CustomTextField({
     super.key,
     required this.hintText,
@@ -30,6 +39,8 @@ class CustomTextField extends StatelessWidget {
     this.suffixIcon,
     this.readOnly = false,
     this.onTap,
+    this.onFieldSubmittedCallback, // 👈 Added this
+    this.focusNode, // 👈 Added this
     this.maxLength,
     this.maxLines,
     this.width,
@@ -39,6 +50,8 @@ class CustomTextField extends StatelessWidget {
     this.confirmPasswordController,
     this.isObscureNotifier, // 👈 pass this for obscure toggle
     this.enabled = true,
+    this.borderRadius,
+    this.textAlign,
   });
 
   String? _validateInput(String? value) {
@@ -87,7 +100,7 @@ class CustomTextField extends StatelessWidget {
     final notifier = isObscureNotifier ?? ValueNotifier<bool>(obsecureText);
 
     return SizedBox(
-      width: width ?? 0.87.sw,
+      width: width ?? 0.9.sw,
       child: ValueListenableBuilder<bool>(
         valueListenable: notifier,
         builder: (_, isObscure, __) {
@@ -97,11 +110,23 @@ class CustomTextField extends StatelessWidget {
             obscureText: isObscure,
             keyboardType: keyboardType,
             style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
-
+            textAlign: textAlign ?? TextAlign.start,
             validator: _validateInput,
-            //readOnly: readOnly ?? false,
+            readOnly: readOnly ?? false, // 💡 Uncommented
             maxLength: maxLength ?? 50,
             maxLines: maxLines ?? 1,
+
+            onTap: onTap, // 💡 Uncommented for standard onTap behavior
+            // 🚀 FIX: This property handles the 'Enter' key press
+            onFieldSubmitted: onFieldSubmittedCallback,
+
+            // 💡 NEW: Apply FocusNode
+            focusNode: focusNode,
+
+            // 💡 NEW: Set keyboard action for 'Done' or 'Next' appearance
+            textInputAction: maxLines == 1
+                ? TextInputAction.done
+                : TextInputAction.newline,
 
             decoration: InputDecoration(
               hintText: hintText,
@@ -113,58 +138,57 @@ class CustomTextField extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
               contentPadding:
-                  contentPadding ?? EdgeInsets.all(AppSizes.paddingMd),
-              prefixIcon:
-                  prefixIcon != null
-                      ? Icon(prefixIcon, size: AppSizes.iconSm)
-                      : null,
-              suffixIcon:
-                  obsecureText
-                      ? GestureDetector(
-                        onTap: () => notifier.value = !notifier.value,
-                        child: Icon(
-                          isObscure
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
-                      )
-                      : (suffixIcon != null
-                          ? (suffixIcon is Widget
+                  contentPadding ?? EdgeInsets.all(AppSizes.paddingSm),
+              prefixIcon: prefixIcon != null
+                  ? Icon(prefixIcon, size: AppSizes.iconSm)
+                  : null,
+              suffixIcon: obsecureText
+                  ? GestureDetector(
+                      onTap: () => notifier.value = !notifier.value,
+                      child: Icon(
+                        isObscure
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                      ),
+                    )
+                  : (suffixIcon != null
+                        ? (suffixIcon is Widget
                               ? suffixIcon
                               : Icon(suffixIcon, size: AppSizes.iconSm))
-                          : null),
+                        : null),
               filled: true,
+
               fillColor:
                   (fillColor ??
-                      (colorScheme.brightness == Brightness.dark
-                          ? DarkThemeColors.richBlack
-                          : LightThemeColors.mediumGray)),
+                  (colorScheme.brightness == Brightness.dark
+                      ? DarkThemeColors.lightCharcoal
+                      : LightThemeColors.pureWhite)),
 
               suffixIconColor: colorScheme.onSurface,
               prefixIconColor: colorScheme.onSurface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(
-                  Radius.circular(AppSizes.radiusLg),
+                  Radius.circular(borderRadius ?? AppSizes.radiusXl),
                 ),
-                borderSide: BorderSide(color: colorScheme.surface),
+                borderSide: BorderSide(color: fillColor ?? colorScheme.surface),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.all(
-                  Radius.circular(AppSizes.radiusLg),
+                  Radius.circular(borderRadius ?? AppSizes.radiusXl),
                 ),
-                borderSide: BorderSide(color: colorScheme.surface),
+                borderSide: BorderSide(color: fillColor ?? colorScheme.surface),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.all(
-                  Radius.circular(AppSizes.radiusLg),
+                  Radius.circular(borderRadius ?? AppSizes.radiusXl),
                 ),
-                borderSide: BorderSide(color: colorScheme.primary),
+                borderSide: BorderSide(color: fillColor ?? colorScheme.surface),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.all(
-                  Radius.circular(AppSizes.radiusLg),
+                  Radius.circular(borderRadius ?? AppSizes.radiusXl),
                 ),
-                borderSide: BorderSide(color: colorScheme.error),
+                borderSide: BorderSide(color: fillColor ?? colorScheme.error),
               ),
             ),
           );

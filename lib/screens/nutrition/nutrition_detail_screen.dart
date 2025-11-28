@@ -1,14 +1,11 @@
 import 'package:ai_ruchi/models/recipe.dart';
-import 'package:ai_ruchi/shared/widgets/recipe_nutrition_tab.dart';
+import 'package:ai_ruchi/shared/widgets/recipe/recipe_nutrition_tab.dart';
 import 'package:flutter/material.dart';
 
 class NutritionDetailScreen extends StatelessWidget {
   final PerServingNutrition nutrition;
 
-  const NutritionDetailScreen({
-    super.key,
-    required this.nutrition,
-  });
+  const NutritionDetailScreen({super.key, required this.nutrition});
 
   @override
   Widget build(BuildContext context) {
@@ -18,9 +15,7 @@ class NutritionDetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           'Nutrition Details',
-          style: textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
         ),
       ),
       body: RecipeNutritionTab(
@@ -31,4 +26,3 @@ class NutritionDetailScreen extends StatelessWidget {
     );
   }
 }
-

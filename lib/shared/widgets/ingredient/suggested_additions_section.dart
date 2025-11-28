@@ -1,7 +1,7 @@
 import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/providers/ingredients_provider.dart';
-import 'package:ai_ruchi/shared/widgets/custom_snackbar.dart';
+import 'package:ai_ruchi/shared/widgets/common/custom_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -9,11 +9,7 @@ class SuggestedAdditionsSection extends StatelessWidget {
   final String? title;
   final List<String>? suggestions;
 
-  const SuggestedAdditionsSection({
-    super.key,
-    this.title,
-    this.suggestions,
-  });
+  const SuggestedAdditionsSection({super.key, this.title, this.suggestions});
 
   @override
   Widget build(BuildContext context) {
@@ -59,10 +55,7 @@ class _SuggestionChip extends StatelessWidget {
   final String suggestion;
   final VoidCallback onTap;
 
-  const _SuggestionChip({
-    required this.suggestion,
-    required this.onTap,
-  });
+  const _SuggestionChip({required this.suggestion, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -84,11 +77,7 @@ class _SuggestionChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.add,
-              color: colorScheme.primary,
-              size: AppSizes.iconSm,
-            ),
+            Icon(Icons.add, color: colorScheme.primary, size: AppSizes.iconSm),
             SizedBox(width: AppSizes.spaceXs),
             Text(
               suggestion,
@@ -103,5 +92,3 @@ class _SuggestionChip extends StatelessWidget {
     );
   }
 }
-
-

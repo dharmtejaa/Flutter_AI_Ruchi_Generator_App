@@ -7,7 +7,6 @@ class CustomSnackBar {
   static void showSuccess(
     BuildContext context,
     String message, {
-    String? plantName,
     String? actionLabel,
     VoidCallback? onAction,
     Duration duration = const Duration(seconds: 2),
@@ -17,7 +16,6 @@ class CustomSnackBar {
       message,
       backgroundColor: AppColors.success,
       icon: Icons.check_circle_rounded,
-      plantName: plantName,
       actionLabel: actionLabel,
       onAction: onAction,
       duration: duration,
@@ -27,7 +25,6 @@ class CustomSnackBar {
   static void showError(
     BuildContext context,
     String message, {
-    String? plantName,
     String? actionLabel,
     VoidCallback? onAction,
     Duration duration = const Duration(seconds: 2),
@@ -37,7 +34,6 @@ class CustomSnackBar {
       message,
       backgroundColor: AppColors.error,
       icon: Icons.error_rounded,
-      plantName: plantName,
       actionLabel: actionLabel,
       onAction: onAction,
       duration: duration,
@@ -47,7 +43,6 @@ class CustomSnackBar {
   static void showInfo(
     BuildContext context,
     String message, {
-    String? plantName,
     String? actionLabel,
     VoidCallback? onAction,
     Duration duration = const Duration(seconds: 2),
@@ -57,7 +52,6 @@ class CustomSnackBar {
       message,
       backgroundColor: AppColors.info,
       icon: Icons.info_rounded,
-      plantName: plantName,
       actionLabel: actionLabel,
       onAction: onAction,
       duration: duration,
@@ -67,7 +61,6 @@ class CustomSnackBar {
   static void showWarning(
     BuildContext context,
     String message, {
-    String? plantName,
     String? actionLabel,
     VoidCallback? onAction,
     Duration duration = const Duration(seconds: 2),
@@ -77,7 +70,6 @@ class CustomSnackBar {
       message,
       backgroundColor: AppColors.warning,
       icon: Icons.warning_rounded,
-      plantName: plantName,
       actionLabel: actionLabel,
       onAction: onAction,
       duration: duration,
@@ -89,7 +81,6 @@ class CustomSnackBar {
     String message, {
     required Color backgroundColor,
     required IconData icon,
-    String? plantName,
     String? actionLabel,
     VoidCallback? onAction,
     required Duration duration,
@@ -125,33 +116,16 @@ class CustomSnackBar {
 
             SizedBox(width: AppSizes.spaceMd),
 
-            // Message with highlighted plant name
+            // Message
             Expanded(
-              child: plantName != null && message.contains(plantName)
-                  ? RichText(
-                      text: TextSpan(
-                        children: _buildHighlightedText(
-                          textTheme,
-                          message,
-                          plantName,
-                          colorScheme,
-                          context,
-                        ),
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onPrimary,
-                        ),
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    )
-                  : Text(
-                      message,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onPrimary,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+              child: Text(
+                message,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onPrimary,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
 
             // Enhanced Action Button (if provided)
@@ -179,41 +153,5 @@ class CustomSnackBar {
         ),
       ),
     );
-  }
-
-  static List<TextSpan> _buildHighlightedText(
-    TextTheme textTheme,
-    String message,
-    String plantName,
-    ColorScheme colorScheme,
-    BuildContext context,
-  ) {
-    final List<TextSpan> spans = [];
-    final String lowerMessage = message.toLowerCase();
-    final String lowerPlantName = plantName.toLowerCase();
-    final int startIndex = lowerMessage.indexOf(lowerPlantName);
-
-    if (startIndex == -1) {
-      spans.add(TextSpan(text: message));
-      return spans;
-    }
-    // Add text before the plant name
-    if (startIndex > 0) {
-      spans.add(TextSpan(text: message.substring(0, startIndex)));
-    }
-    // Add highlighted plant name
-    spans.add(
-      TextSpan(
-        text: message.substring(startIndex, startIndex + plantName.length),
-      ),
-    );
-
-    // Add text after the plant name
-    if (startIndex + plantName.length < message.length) {
-      spans.add(
-        TextSpan(text: message.substring(startIndex + plantName.length)),
-      );
-    }
-    return spans;
   }
 }

@@ -1,5 +1,5 @@
 import 'package:ai_ruchi/core/theme/app_shadows.dart';
-import 'package:ai_ruchi/shared/widgets/custom_snackbar.dart';
+import 'package:ai_ruchi/shared/widgets/common/custom_snackbar.dart';
 import 'package:flutter/material.dart';
 
 class AppBottomNavigationBar extends StatelessWidget {
