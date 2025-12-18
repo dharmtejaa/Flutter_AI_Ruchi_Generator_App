@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/core/theme/dark_theme_colors.dart';
@@ -74,11 +75,17 @@ class AppTheme {
 
     // Enhanced AppBar Theme
     appBarTheme: AppBarTheme(
-      backgroundColor: LightThemeColors.mediumGray,
-
+      backgroundColor: LightThemeColors.softWhite,
       foregroundColor: LightThemeColors.deepBlack,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
+      systemOverlayStyle: SystemUiOverlayStyle(
+        statusBarColor: LightThemeColors.softWhite,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: LightThemeColors.softWhite,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
       titleTextStyle: TextStyle(
         fontSize: 20.sp,
         fontWeight: FontWeight.w600,
@@ -332,6 +339,13 @@ class AppTheme {
       foregroundColor: DarkThemeColors.lightGray,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
+      systemOverlayStyle: SystemUiOverlayStyle(
+        statusBarColor: DarkThemeColors.mediumCharcoal,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: DarkThemeColors.mediumCharcoal,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
       titleTextStyle: TextStyle(
         fontSize: 20.sp,
         fontWeight: FontWeight.w600,

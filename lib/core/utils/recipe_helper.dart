@@ -17,19 +17,24 @@ class RecipeHelper {
     String? navigationRoute,
   }) async {
     final ingredientsProvider = context.read<IngredientsProvider>();
-    
+
     if (ingredientsProvider.currentIngredients.isEmpty) {
-      CustomSnackBar.showWarning(
-        context,
-        'Please add at least one ingredient',
-      );
+      CustomSnackBar.showWarning(context, 'Please add at least one ingredient');
       return false;
     }
 
-    // Show preferences dialog
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => const RecipePreferencesDialog(),
+    // Show full-screen preferences with fade transition
+    final result = await Navigator.of(context).push<bool>(
+      PageRouteBuilder(
+        opaque: true,
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const RecipePreferencesDialog(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 200),
+        reverseTransitionDuration: const Duration(milliseconds: 150),
+      ),
     );
 
     if (result != true) return false;
@@ -44,9 +49,7 @@ class RecipeHelper {
     }
 
     // Generate recipe
-    await recipeProvider.generateRecipe(
-      ingredientsProvider.currentIngredients,
-    );
+    await recipeProvider.generateRecipe(ingredientsProvider.currentIngredients);
 
     if (!context.mounted) return false;
 
@@ -88,12 +91,8 @@ class RecipeHelper {
     if (result && context.mounted) {
       final recipeProvider = context.read<RecipeProvider>();
       if (recipeProvider.error == null && recipeProvider.recipe != null) {
-        CustomSnackBar.showSuccess(
-          context,
-          'Recipe regenerated successfully!',
-        );
+        CustomSnackBar.showSuccess(context, 'Recipe regenerated successfully!');
       }
     }
   }
 }
-

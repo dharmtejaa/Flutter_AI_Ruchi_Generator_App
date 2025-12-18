@@ -1,6 +1,7 @@
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/shared/widgets/common/custom_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class IngredientActionBar extends StatelessWidget {
   final String primaryActionText;
@@ -38,8 +39,7 @@ class IngredientActionBar extends StatelessWidget {
 
     final primaryBg = primaryBackgroundColor ?? colorScheme.primary;
     final primaryText = primaryTextColor ?? colorScheme.onPrimary;
-    final secondaryBg =
-        secondaryBackgroundColor ?? colorScheme.surface;
+    final secondaryBg = secondaryBackgroundColor ?? colorScheme.surface;
     final secondaryText = secondaryTextColor ?? colorScheme.primary;
 
     final content = Row(
@@ -48,6 +48,7 @@ class IngredientActionBar extends StatelessWidget {
         if (secondaryActionText != null && onSecondaryAction != null)
           Expanded(
             child: CustomButton(
+              height: 45.h,
               text: secondaryActionText!,
               backgroundColor: secondaryBg,
               textColor: secondaryText,
@@ -57,6 +58,7 @@ class IngredientActionBar extends StatelessWidget {
           ),
         Expanded(
           child: CustomButton(
+            height: 45.h,
             text: primaryActionText,
             backgroundColor: primaryBg,
             textColor: primaryText,
@@ -70,17 +72,13 @@ class IngredientActionBar extends StatelessWidget {
     if (isBottomBar) {
       return Padding(
         padding: EdgeInsets.symmetric(
-          horizontal: AppSizes.paddingMd,
+          horizontal: AppSizes.paddingXs,
           vertical: AppSizes.vPaddingXs,
         ),
         child: content,
       );
     } else {
-      return Padding(
-        padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingLg),
-        child: content,
-      );
+      return content;
     }
   }
 }
-

@@ -1,5 +1,5 @@
 import 'package:ai_ruchi/models/recipe.dart';
-import 'package:ai_ruchi/screens/entry/entry_screen.dart';
+import 'package:ai_ruchi/screens/main/main_shell_screen.dart';
 import 'package:ai_ruchi/screens/nutrition/nutrition_detail_screen.dart';
 import 'package:ai_ruchi/screens/recipe/adjust_ingredients_screen.dart';
 import 'package:ai_ruchi/screens/recipe/recipe_generated_screen.dart';
@@ -31,10 +31,10 @@ class AppRouter {
     routes: [
       GoRoute(
         path: '/',
-        name: 'Entry',
+        name: 'Home',
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
-          child: const EntryScreen(),
+          child: const MainShellScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return SharedAxisTransition(
               animation: animation,
@@ -97,10 +97,10 @@ class AppRouter {
         path: '/nutrition',
         name: 'Nutrition',
         pageBuilder: (context, state) {
-          final nutrition = state.extra as PerServingNutrition;
+          final recipe = state.extra as Recipe;
           return CustomTransitionPage(
             key: state.pageKey,
-            child: NutritionDetailScreen(nutrition: nutrition),
+            child: NutritionDetailScreen(recipe: recipe),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
                   return SharedAxisTransition(

@@ -1,0 +1,10 @@
+﻿Analyzing ai_ruchi...                                           
+
+   info - Don't use 'BuildContext's across async gaps - lib\core\utils\recipe_helper.dart:42:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\core\utils\recipe_helper.dart:46:9 - use_build_context_synchronously
+   info - Statements in an if should be enclosed in a block - lib\models\recipe.dart:235:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\models\recipe.dart:238:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\models\recipe.dart:241:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\models\recipe.dart:252:7 - curly_braces_in_flow_control_structures
+   info - Unnecessary use of multiple underscores - lib\shared\widgets\common\custom_textfield.dart:106:33 - unnecessary_underscores
+

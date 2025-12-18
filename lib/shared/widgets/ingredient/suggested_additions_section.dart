@@ -1,8 +1,9 @@
 import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/providers/ingredients_provider.dart';
-import 'package:ai_ruchi/shared/widgets/common/custom_snackbar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 class SuggestedAdditionsSection extends StatelessWidget {
@@ -32,16 +33,16 @@ class SuggestedAdditionsSection extends StatelessWidget {
             color: colorScheme.onSurface,
           ),
         ),
-        SizedBox(height: AppSizes.spaceHeightMd),
+        SizedBox(height: 8.h),
         Wrap(
-          spacing: AppSizes.spaceSm,
-          runSpacing: AppSizes.spaceHeightSm,
+          spacing: 6.w,
+          runSpacing: 6.h,
           children: items.map((suggestion) {
-            return _SuggestionChip(
-              suggestion: suggestion,
+            return _CompactChip(
+              label: suggestion,
               onTap: () {
+                HapticFeedback.selectionClick();
                 provider.addSuggestedIngredient(suggestion);
-                CustomSnackBar.showSuccess(context, '$suggestion added');
               },
             );
           }).toList(),
@@ -51,11 +52,11 @@ class SuggestedAdditionsSection extends StatelessWidget {
   }
 }
 
-class _SuggestionChip extends StatelessWidget {
-  final String suggestion;
+class _CompactChip extends StatelessWidget {
+  final String label;
   final VoidCallback onTap;
 
-  const _SuggestionChip({required this.suggestion, required this.onTap});
+  const _CompactChip({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -65,13 +66,10 @@ class _SuggestionChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: AppSizes.paddingMd,
-          vertical: AppSizes.vPaddingSm,
-        ),
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
         decoration: BoxDecoration(
           color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           boxShadow: AppShadows.cardShadow(context),
         ),
         child: Row(
@@ -80,10 +78,10 @@ class _SuggestionChip extends StatelessWidget {
             Icon(Icons.add, color: colorScheme.primary, size: AppSizes.iconSm),
             SizedBox(width: AppSizes.spaceXs),
             Text(
-              suggestion,
-              style: textTheme.bodyMedium?.copyWith(
+              label,
+              style: textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurface,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

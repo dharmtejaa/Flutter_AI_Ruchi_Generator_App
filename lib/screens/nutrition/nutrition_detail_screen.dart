@@ -3,9 +3,9 @@ import 'package:ai_ruchi/shared/widgets/recipe/recipe_nutrition_tab.dart';
 import 'package:flutter/material.dart';
 
 class NutritionDetailScreen extends StatelessWidget {
-  final PerServingNutrition nutrition;
+  final Recipe recipe;
 
-  const NutritionDetailScreen({super.key, required this.nutrition});
+  const NutritionDetailScreen({super.key, required this.recipe});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,7 @@ class NutritionDetailScreen extends StatelessWidget {
         ),
       ),
       body: RecipeNutritionTab(
-        nutrition: nutrition,
+        recipe: recipe,
         onRegenerate: () => Navigator.of(context).pop(),
         onSave: () => Navigator.of(context).pop(),
       ),

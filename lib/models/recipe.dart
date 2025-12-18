@@ -148,6 +148,14 @@ class Macros {
     this.sugar,
   });
 
+  /// Returns fiber and sugar as a list with names
+  List<MicroNutrientInfo> get otherMacros {
+    final list = <MicroNutrientInfo>[];
+    if (fiber != null) list.add(MicroNutrientInfo('Fiber', fiber!));
+    if (sugar != null) list.add(MicroNutrientInfo('Sugar', sugar!));
+    return list;
+  }
+
   factory Macros.fromJson(Map<String, dynamic> json) {
     return Macros(
       carbohydrates: MacroNutrient.fromJson(json['carbohydrates'] ?? {}),
@@ -222,6 +230,44 @@ class Micros {
     this.zinc,
   });
 
+  /// Returns all available vitamins as a list
+  List<MicroNutrientInfo> get vitamins {
+    final list = <MicroNutrientInfo>[];
+    if (vitaminA != null) list.add(MicroNutrientInfo('Vitamin A', vitaminA!));
+    if (vitaminC != null) list.add(MicroNutrientInfo('Vitamin C', vitaminC!));
+    if (vitaminD != null) list.add(MicroNutrientInfo('Vitamin D', vitaminD!));
+    if (vitaminE != null) list.add(MicroNutrientInfo('Vitamin E', vitaminE!));
+    if (vitaminK != null) list.add(MicroNutrientInfo('Vitamin K', vitaminK!));
+    if (thiamin != null) list.add(MicroNutrientInfo('Thiamin (B1)', thiamin!));
+    if (riboflavin != null) {
+      list.add(MicroNutrientInfo('Riboflavin (B2)', riboflavin!));
+    }
+    if (niacin != null) list.add(MicroNutrientInfo('Niacin (B3)', niacin!));
+    if (vitaminB6 != null) {
+      list.add(MicroNutrientInfo('Vitamin B6', vitaminB6!));
+    }
+    if (folate != null) list.add(MicroNutrientInfo('Folate', folate!));
+    if (vitaminB12 != null) {
+      list.add(MicroNutrientInfo('Vitamin B12', vitaminB12!));
+    }
+    return list;
+  }
+
+  /// Returns all available minerals as a list
+  List<MicroNutrientInfo> get minerals {
+    final list = <MicroNutrientInfo>[];
+    if (calcium != null) list.add(MicroNutrientInfo('Calcium', calcium!));
+    if (iron != null) list.add(MicroNutrientInfo('Iron', iron!));
+    if (magnesium != null) list.add(MicroNutrientInfo('Magnesium', magnesium!));
+    if (phosphorus != null) {
+      list.add(MicroNutrientInfo('Phosphorus', phosphorus!));
+    }
+    if (potassium != null) list.add(MicroNutrientInfo('Potassium', potassium!));
+    if (sodium != null) list.add(MicroNutrientInfo('Sodium', sodium!));
+    if (zinc != null) list.add(MicroNutrientInfo('Zinc', zinc!));
+    return list;
+  }
+
   factory Micros.fromJson(Map<String, dynamic> json) {
     return Micros(
       vitaminA: json['vitaminA'] != null
@@ -278,3 +324,13 @@ class Micros {
   }
 }
 
+/// Helper class to hold micronutrient info with name
+class MicroNutrientInfo {
+  final String name;
+  final NutritionValue nutrient;
+
+  MicroNutrientInfo(this.name, this.nutrient);
+
+  double get value => nutrient.value;
+  String get unit => nutrient.unit;
+}

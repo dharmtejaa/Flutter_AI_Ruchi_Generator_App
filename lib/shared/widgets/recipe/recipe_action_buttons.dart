@@ -1,6 +1,7 @@
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/shared/widgets/common/custom_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class RecipeActionButtons extends StatelessWidget {
   final VoidCallback onRegenerate;
@@ -16,24 +17,16 @@ class RecipeActionButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: EdgeInsets.all(AppSizes.paddingLg),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: EdgeInsets.all(AppSizes.paddingSm),
       child: Row(
         children: [
           Expanded(
             child: CustomButton(
-              text: 'Regenerate Recipe',
-              backgroundColor: colorScheme.surfaceContainerHighest,
+              height: 45.h,
+              text: 'Try Again',
+              icon: Icons.refresh,
+              backgroundColor: colorScheme.onPrimary,
               textColor: colorScheme.onSurface,
               ontap: onRegenerate,
             ),
@@ -41,7 +34,9 @@ class RecipeActionButtons extends StatelessWidget {
           SizedBox(width: AppSizes.spaceMd),
           Expanded(
             child: CustomButton(
+              height: 45.h,
               text: 'Save Recipe',
+              icon: Icons.bookmark_border_outlined,
               backgroundColor: colorScheme.primary,
               textColor: colorScheme.onPrimary,
               ontap: onSave,
@@ -52,4 +47,3 @@ class RecipeActionButtons extends StatelessWidget {
     );
   }
 }
-
