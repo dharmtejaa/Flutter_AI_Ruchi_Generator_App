@@ -23,14 +23,52 @@ class RecipeInstructionsTab extends StatefulWidget {
 class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
   final Set<int> _completedSteps = {};
 
+  /// Check if a step can be toggled (must be sequential)
+  bool _canToggleStep(int index) {
+    // Can always toggle if it's currently completed (to uncomplete)
+    if (_completedSteps.contains(index)) {
+      return true;
+    }
+    // Can only complete if all previous steps are completed
+    for (int i = 0; i < index; i++) {
+      if (!_completedSteps.contains(i)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   void _toggleStep(int index) {
+    if (!_canToggleStep(index)) {
+      // Show a message that previous steps must be completed first
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Complete step ${_getNextIncompleteStep() + 1} first'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       if (_completedSteps.contains(index)) {
-        _completedSteps.remove(index);
+        // When uncompleting a step, also uncomplete all steps after it
+        _completedSteps.removeWhere((step) => step >= index);
       } else {
         _completedSteps.add(index);
       }
     });
+  }
+
+  /// Get the next step that needs to be completed
+  int _getNextIncompleteStep() {
+    for (int i = 0; i < widget.recipe.instructions.length; i++) {
+      if (!_completedSteps.contains(i)) {
+        return i;
+      }
+    }
+    return widget.recipe.instructions.length - 1;
   }
 
   @override
@@ -114,6 +152,8 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
               final instruction = widget.recipe.instructions[index];
               final isCompleted = _completedSteps.contains(index);
               final isLastStep = index == widget.recipe.instructions.length - 1;
+              final isLocked = !_canToggleStep(index);
+              final isNextStep = index == _getNextIncompleteStep();
 
               return TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
@@ -153,13 +193,21 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                                     : null,
                                 color: isCompleted
                                     ? null
+                                    : isLocked
+                                    ? colorScheme.surfaceContainerHighest
                                     : colorScheme.surfaceContainer,
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: isCompleted
                                       ? colorScheme.primary
-                                      : colorScheme.outline,
-                                  width: 2,
+                                      : isNextStep
+                                      ? colorScheme.primary.withValues(
+                                          alpha: 0.5,
+                                        )
+                                      : colorScheme.outline.withValues(
+                                          alpha: isLocked ? 0.3 : 1,
+                                        ),
+                                  width: isNextStep ? 2.5 : 2,
                                 ),
                                 boxShadow: isCompleted
                                     ? [
@@ -169,6 +217,16 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                                           ),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : isNextStep
+                                    ? [
+                                        BoxShadow(
+                                          color: colorScheme.primary.withValues(
+                                            alpha: 0.15,
+                                          ),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 1),
                                         ),
                                       ]
                                     : null,
@@ -183,12 +241,22 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                                           color: colorScheme.onPrimary,
                                           size: AppSizes.iconSm,
                                         )
+                                      : isLocked
+                                      ? Icon(
+                                          Icons.lock_outline,
+                                          key: ValueKey('lock_$index'),
+                                          color: colorScheme.onSurfaceVariant
+                                              .withValues(alpha: 0.5),
+                                          size: 16.sp,
+                                        )
                                       : Text(
                                           '${index + 1}',
                                           key: ValueKey('num_$index'),
                                           style: textTheme.titleSmall?.copyWith(
                                             fontWeight: FontWeight.w700,
-                                            color: colorScheme.onSurfaceVariant,
+                                            color: isNextStep
+                                                ? colorScheme.primary
+                                                : colorScheme.onSurfaceVariant,
                                           ),
                                         ),
                                 ),
@@ -236,6 +304,9 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                             decoration: BoxDecoration(
                               color: isCompleted
                                   ? colorScheme.primary.withValues(alpha: 0.05)
+                                  : isLocked
+                                  ? colorScheme.surfaceContainerHighest
+                                        .withValues(alpha: 0.5)
                                   : colorScheme.surface,
                               borderRadius: BorderRadius.circular(
                                 AppSizes.radiusLg,
@@ -243,11 +314,15 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                               border: Border.all(
                                 color: isCompleted
                                     ? colorScheme.primary.withValues(alpha: 0.3)
+                                    : isNextStep
+                                    ? colorScheme.primary.withValues(alpha: 0.3)
                                     : colorScheme.outline.withValues(
-                                        alpha: 0.15,
+                                        alpha: isLocked ? 0.1 : 0.15,
                                       ),
                               ),
-                              boxShadow: AppShadows.cardShadow(context),
+                              boxShadow: isLocked
+                                  ? null
+                                  : AppShadows.cardShadow(context),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,6 +333,10 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                                     color: isCompleted
                                         ? colorScheme.onSurface.withValues(
                                             alpha: 0.6,
+                                          )
+                                        : isLocked
+                                        ? colorScheme.onSurface.withValues(
+                                            alpha: 0.4,
                                           )
                                         : colorScheme.onSurface,
                                     height: 1.5,

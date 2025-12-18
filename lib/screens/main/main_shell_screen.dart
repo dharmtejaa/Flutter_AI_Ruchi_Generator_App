@@ -1,5 +1,6 @@
 import 'package:ai_ruchi/screens/entry/entry_screen.dart';
 import 'package:ai_ruchi/screens/main/placeholder_screen.dart';
+import 'package:ai_ruchi/screens/profile/profile_screen.dart';
 import 'package:ai_ruchi/shared/widgets/common/double_back_to_exit_wrapper.dart';
 import 'package:ai_ruchi/shared/widgets/navigation/app_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
@@ -27,11 +28,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
       icon: Icons.bookmark,
       description: 'Your saved recipes will appear here',
     ),
-    const PlaceholderScreen(
-      title: 'Profile',
-      icon: Icons.person,
-      description: 'Manage your profile and preferences',
-    ),
+    const ProfileScreen(),
   ];
 
   void _onNavTap(int index) {

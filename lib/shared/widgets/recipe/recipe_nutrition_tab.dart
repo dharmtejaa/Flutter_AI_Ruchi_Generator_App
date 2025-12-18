@@ -335,7 +335,7 @@ class _MacroLegendItem extends StatelessWidget {
   }
 }
 
-// Macro Details Grid
+// Macro Details Grid (Fiber, Sugar)
 class _MacroDetailsGrid extends StatelessWidget {
   final Macros macros;
 
@@ -343,6 +343,7 @@ class _MacroDetailsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     final otherMacros = macros.otherMacros;
 
@@ -357,11 +358,44 @@ class _MacroDetailsGrid extends StatelessWidget {
         return Expanded(
           child: Padding(
             padding: EdgeInsets.only(right: isLast ? 0 : 8.w),
-            child: _NutrientCard(
-              name: macro.name,
-              value: macro.value,
-              unit: macro.unit,
-              color: colorScheme.primary,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                border: Border.all(
+                  color: colorScheme.outline.withValues(alpha: 0.1),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    macro.name,
+                    style: textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8.w,
+                      vertical: 3.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6.r),
+                    ),
+                    child: Text(
+                      '${macro.value % 1 == 0 ? macro.value.toInt() : macro.value.toStringAsFixed(1)} ${macro.unit}',
+                      style: textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -370,7 +404,7 @@ class _MacroDetailsGrid extends StatelessWidget {
   }
 }
 
-// Vitamins Grid
+// Modern Vitamins List
 class _VitaminsGrid extends StatelessWidget {
   final Micros micros;
 
@@ -378,35 +412,18 @@ class _VitaminsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final vitamins = micros.vitamins;
 
     if (vitamins.isEmpty) return _EmptyState(message: 'No vitamin data');
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        crossAxisSpacing: 6.w,
-        mainAxisSpacing: 6.h,
-        childAspectRatio: 0.9,
-      ),
-      itemCount: vitamins.length,
-      itemBuilder: (context, index) {
-        final vitamin = vitamins[index];
-        return _NutrientCard(
-          name: vitamin.name,
-          value: vitamin.value,
-          unit: vitamin.unit,
-          color: colorScheme.primary,
-        );
-      },
+    return _NutrientsList(
+      nutrients: vitamins,
+      accentColor: const Color(0xFF4CAF50),
     );
   }
 }
 
-// Minerals Grid
+// Modern Minerals List
 class _MineralsGrid extends StatelessWidget {
   final Micros micros;
 
@@ -414,46 +431,138 @@ class _MineralsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final minerals = micros.minerals;
 
     if (minerals.isEmpty) return _EmptyState(message: 'No mineral data');
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        crossAxisSpacing: 6.w,
-        mainAxisSpacing: 6.h,
-        childAspectRatio: 0.9,
-      ),
-      itemCount: minerals.length,
-      itemBuilder: (context, index) {
-        final mineral = minerals[index];
-        return _NutrientCard(
-          name: mineral.name,
-          value: mineral.value,
-          unit: mineral.unit,
-          color: colorScheme.secondary,
-        );
-      },
+    return _NutrientsList(
+      nutrients: minerals,
+      accentColor: const Color(0xFF2196F3),
     );
   }
 }
 
-// Nutrient Card - displays name, value, unit from model
-class _NutrientCard extends StatelessWidget {
+// Modern Nutrients List Widget (Expandable)
+class _NutrientsList extends StatefulWidget {
+  final List<MicroNutrientInfo> nutrients;
+  final Color accentColor;
+  final int initialVisibleCount;
+
+  const _NutrientsList({
+    required this.nutrients,
+    required this.accentColor,
+    this.initialVisibleCount = 3,
+  });
+
+  @override
+  State<_NutrientsList> createState() => _NutrientsListState();
+}
+
+class _NutrientsListState extends State<_NutrientsList> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final hasMore = widget.nutrients.length > widget.initialVisibleCount;
+    final visibleNutrients = _isExpanded
+        ? widget.nutrients
+        : widget.nutrients.take(widget.initialVisibleCount).toList();
+    final remainingCount = widget.nutrients.length - widget.initialVisibleCount;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        children: [
+          // Nutrient rows
+          AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            child: Column(
+              children: visibleNutrients.asMap().entries.map((entry) {
+                final index = entry.key;
+                final nutrient = entry.value;
+                final isLast = index == visibleNutrients.length - 1 && !hasMore;
+
+                return _NutrientRow(
+                  name: nutrient.name,
+                  value: nutrient.value,
+                  unit: nutrient.unit,
+                  accentColor: widget.accentColor,
+                  showDivider: !isLast,
+                );
+              }).toList(),
+            ),
+          ),
+
+          // Show More / Show Less button
+          if (hasMore)
+            InkWell(
+              onTap: () => setState(() => _isExpanded = !_isExpanded),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(AppSizes.radiusMd),
+                bottomRight: Radius.circular(AppSizes.radiusMd),
+              ),
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(vertical: 10.h),
+                decoration: BoxDecoration(
+                  color: widget.accentColor.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(AppSizes.radiusMd),
+                    bottomRight: Radius.circular(AppSizes.radiusMd),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _isExpanded ? 'Show less' : 'Show $remainingCount more',
+                      style: textTheme.labelMedium?.copyWith(
+                        color: widget.accentColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(width: 4.w),
+                    AnimatedRotation(
+                      turns: _isExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 18.sp,
+                        color: widget.accentColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// Single Nutrient Row
+class _NutrientRow extends StatelessWidget {
   final String name;
   final double value;
   final String unit;
-  final Color color;
+  final Color accentColor;
+  final bool showDivider;
 
-  const _NutrientCard({
+  const _NutrientRow({
     required this.name,
     required this.value,
     required this.unit,
-    required this.color,
+    required this.accentColor,
+    this.showDivider = true,
   });
 
   @override
@@ -461,42 +570,77 @@ class _NutrientCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: EdgeInsets.all(6.w),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        mainAxisAlignment: .center,
-        crossAxisAlignment: .center,
-        children: [
-          Text(
-            name,
-            style: textTheme.titleMedium,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSizes.paddingMd,
+            vertical: 12.h,
           ),
-          SizedBox(height: 2.h),
-          Row(
-            crossAxisAlignment: .center,
-            mainAxisAlignment: .center,
+          child: Row(
             children: [
-              Text(
-                '${value % 1 == 0 ? value.toInt() : value.toStringAsFixed(1)}',
-                style: textTheme.titleMedium?.copyWith(
-                  color: color,
-                  fontWeight: .bold,
+              // Accent dot
+              Container(
+                width: 6.w,
+                height: 6.h,
+                decoration: BoxDecoration(
+                  color: accentColor,
+                  shape: BoxShape.circle,
                 ),
               ),
-              SizedBox(width: 4.w),
-              Text(unit, style: textTheme.titleMedium),
+              SizedBox(width: 12.w),
+              // Name
+              Expanded(
+                child: Text(
+                  name,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              // Value with unit
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6.r),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      value % 1 == 0
+                          ? value.toInt().toString()
+                          : value.toStringAsFixed(1),
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: accentColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(width: 2.w),
+                    Text(
+                      unit,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: accentColor.withValues(alpha: 0.8),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-        ],
-      ),
+        ),
+        if (showDivider)
+          Divider(
+            height: 1,
+            thickness: 1,
+            indent: AppSizes.paddingMd + 18.w,
+            endIndent: AppSizes.paddingMd,
+            color: colorScheme.outline.withValues(alpha: 0.08),
+          ),
+      ],
     );
   }
 }
@@ -663,7 +807,7 @@ class _SimpleListCard extends StatelessWidget {
   }
 }
 
-// Simple Chips Card (Target Audience)
+// Visual Target Audience Card
 class _SimpleChipsCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -675,61 +819,115 @@ class _SimpleChipsCard extends StatelessWidget {
     required this.items,
   });
 
+  // Get icon based on audience type
+  IconData _getIconForAudience(String audience) {
+    final lower = audience.toLowerCase();
+    if (lower.contains('vegan') || lower.contains('vegetarian')) {
+      return Icons.eco_outlined;
+    } else if (lower.contains('athlete') || lower.contains('fitness')) {
+      return Icons.fitness_center;
+    } else if (lower.contains('weight') || lower.contains('diet')) {
+      return Icons.monitor_weight_outlined;
+    } else if (lower.contains('heart') || lower.contains('cardio')) {
+      return Icons.favorite_outline;
+    } else if (lower.contains('diabetes') || lower.contains('sugar')) {
+      return Icons.bloodtype_outlined;
+    } else if (lower.contains('kid') ||
+        lower.contains('child') ||
+        lower.contains('family')) {
+      return Icons.child_care;
+    } else if (lower.contains('elderly') || lower.contains('senior')) {
+      return Icons.elderly;
+    } else if (lower.contains('protein') || lower.contains('muscle')) {
+      return Icons.sports_gymnastics;
+    } else if (lower.contains('energy') || lower.contains('active')) {
+      return Icons.bolt;
+    } else if (lower.contains('immunity') || lower.contains('health')) {
+      return Icons.shield_outlined;
+    }
+    return Icons.person_outline;
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(AppSizes.paddingMd),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: colorScheme.primary, size: 20.sp),
-              SizedBox(width: 8.w),
-              Text(
-                title,
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.primary,
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8.w),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Icon(icon, color: colorScheme.primary, size: 20.sp),
+            ),
+            SizedBox(width: 10.w),
+            Text(
+              title,
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 12.h),
+        // Visual Audience Chips
+        Wrap(
+          spacing: 10.w,
+          runSpacing: 10.h,
+          children: items.map((item) {
+            final audienceIcon = _getIconForAudience(item);
+
+            return Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(20.r),
+                border: Border.all(
+                  color: colorScheme.outline.withValues(alpha: 0.2),
+                  width: 1,
                 ),
               ),
-            ],
-          ),
-          SizedBox(height: 10.h),
-          Wrap(
-            spacing: 8.w,
-            runSpacing: 8.h,
-            children: items
-                .map(
-                  (item) => Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 10.w,
-                      vertical: 6.h,
-                    ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(4.w),
                     decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.1,
+                      ),
+                      shape: BoxShape.circle,
                     ),
+                    child: Icon(
+                      audienceIcon,
+                      size: 14.sp,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Flexible(
                     child: Text(
                       item,
-                      style: textTheme.labelMedium?.copyWith(
-                        color: colorScheme.primary,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                )
-                .toList(),
-          ),
-        ],
-      ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }

@@ -27,7 +27,7 @@ class RecipeActionButtons extends StatelessWidget {
               text: 'Try Again',
               icon: Icons.refresh,
               backgroundColor: colorScheme.onPrimary,
-              textColor: colorScheme.onSurface,
+              textColor: Colors.black87,
               ontap: onRegenerate,
             ),
           ),
