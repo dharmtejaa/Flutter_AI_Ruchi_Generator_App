@@ -56,7 +56,8 @@ class RecipeLoadingScreen extends StatelessWidget {
             Padding(
               padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingXl),
               child: Text(
-                subtitle ?? 'Our AI chef is crafting the perfect recipe for you',
+                subtitle ??
+                    'Our AI chef is crafting the perfect recipe for you',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: AppSizes.fontMd,
@@ -76,4 +77,3 @@ class RecipeLoadingScreen extends StatelessWidget {
     );
   }
 }
-

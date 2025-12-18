@@ -3,6 +3,7 @@ import 'package:ai_ruchi/screens/entry/entry_screen.dart';
 import 'package:ai_ruchi/screens/nutrition/nutrition_detail_screen.dart';
 import 'package:ai_ruchi/screens/recipe/adjust_ingredients_screen.dart';
 import 'package:ai_ruchi/screens/recipe/recipe_generated_screen.dart';
+import 'package:ai_ruchi/screens/recipe/recipe_generation_loading_screen.dart';
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -71,6 +72,22 @@ class AppRouter {
               animation: animation,
               secondaryAnimation: secondaryAnimation,
               transitionType: SharedAxisTransitionType.horizontal,
+              child: child,
+            );
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/loading',
+        name: 'Loading',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const RecipeGenerationLoadingScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SharedAxisTransition(
+              animation: animation,
+              secondaryAnimation: secondaryAnimation,
+              transitionType: SharedAxisTransitionType.scaled,
               child: child,
             );
           },
