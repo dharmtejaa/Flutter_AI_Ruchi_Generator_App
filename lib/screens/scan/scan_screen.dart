@@ -29,6 +29,11 @@ class _ScanScreenState extends State<ScanScreen>
   String _selectedDietary = 'none';
   List<String>? _extractedIngredients;
 
+  // Loading and error states
+  String _loadingMessage = 'Generating Recipe...';
+  String? _errorMessage;
+  bool _showError = false;
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
@@ -68,6 +73,8 @@ class _ScanScreenState extends State<ScanScreen>
         setState(() {
           _selectedImage = File(image.path);
           _extractedIngredients = null;
+          _showError = false;
+          _errorMessage = null;
         });
       }
     } catch (e) {
@@ -85,6 +92,9 @@ class _ScanScreenState extends State<ScanScreen>
 
     setState(() {
       _isLoading = true;
+      _loadingMessage = 'Analyzing image...';
+      _showError = false;
+      _errorMessage = null;
     });
 
     try {
@@ -97,6 +107,14 @@ class _ScanScreenState extends State<ScanScreen>
         imageFile: _selectedImage!,
         provider: _selectedProvider,
         preferences: preferences,
+        onRetry: (attempt, maxAttempts) {
+          if (mounted) {
+            setState(() {
+              _loadingMessage =
+                  'Retrying... (Attempt $attempt of $maxAttempts)';
+            });
+          }
+        },
       );
 
       if (mounted) {
@@ -112,24 +130,55 @@ class _ScanScreenState extends State<ScanScreen>
       }
     } catch (e) {
       if (mounted) {
-        CustomSnackBar.showError(
-          context,
-          e.toString().replaceAll('Exception:', '').trim(),
-        );
+        // Clean up the error message
+        String errorMessage = e.toString();
+        // Remove all "Exception: " prefixes
+        while (errorMessage.contains('Exception: ')) {
+          errorMessage = errorMessage.replaceAll('Exception: ', '');
+        }
+        errorMessage = errorMessage.trim();
+
+        setState(() {
+          _showError = true;
+          _errorMessage = errorMessage;
+        });
       }
     } finally {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _loadingMessage = 'Generating Recipe...';
         });
       }
     }
+  }
+
+  /// Use demo/mock data for testing
+  void _useDemoData() {
+    final demoResponse = ImageRecipeApiService.getMockResponse();
+
+    setState(() {
+      _extractedIngredients = demoResponse.extractedIngredients;
+      _showError = false;
+      _errorMessage = null;
+    });
+
+    // Update recipe provider with demo data
+    context.read<RecipeProvider>().setRecipe(demoResponse.recipe);
+
+    // Show info that demo data is being used
+    CustomSnackBar.showInfo(context, 'Using demo recipe for preview');
+
+    // Navigate to recipe screen
+    context.push('/recipe');
   }
 
   void _clearImage() {
     setState(() {
       _selectedImage = null;
       _extractedIngredients = null;
+      _showError = false;
+      _errorMessage = null;
     });
   }
 
@@ -170,6 +219,10 @@ class _ScanScreenState extends State<ScanScreen>
                 // Preferences Section
                 _buildPreferencesSection(colorScheme, textTheme),
                 SizedBox(height: AppSizes.spaceHeightLg),
+
+                // Error State with Retry and Demo buttons
+                if (_showError && _errorMessage != null)
+                  _buildErrorSection(colorScheme, textTheme),
 
                 // Extracted Ingredients (if available)
                 if (_extractedIngredients != null &&
@@ -667,11 +720,14 @@ class _ScanScreenState extends State<ScanScreen>
                     ),
                   ),
                   SizedBox(width: AppSizes.spaceMd),
-                  Text(
-                    'Generating Recipe...',
-                    style: textTheme.titleMedium?.copyWith(
-                      color: colorScheme.onPrimary,
-                      fontWeight: FontWeight.w600,
+                  Flexible(
+                    child: Text(
+                      _loadingMessage,
+                      style: textTheme.titleMedium?.copyWith(
+                        color: colorScheme.onPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -692,6 +748,118 @@ class _ScanScreenState extends State<ScanScreen>
                   ),
                 ],
               ),
+      ),
+    );
+  }
+
+  /// Build error section with retry and demo buttons
+  Widget _buildErrorSection(ColorScheme colorScheme, TextTheme textTheme) {
+    return Container(
+      margin: EdgeInsets.only(bottom: AppSizes.spaceHeightLg),
+      padding: EdgeInsets.all(AppSizes.paddingMd),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+        border: Border.all(color: colorScheme.error.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Error header
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(AppSizes.paddingXs),
+                decoration: BoxDecoration(
+                  color: colorScheme.error.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                ),
+                child: Icon(
+                  Icons.error_outline_rounded,
+                  color: colorScheme.error,
+                  size: AppSizes.iconSm,
+                ),
+              ),
+              SizedBox(width: AppSizes.spaceSm),
+              Expanded(
+                child: Text(
+                  'Something went wrong',
+                  style: textTheme.titleMedium?.copyWith(
+                    color: colorScheme.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              // Close button
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showError = false;
+                    _errorMessage = null;
+                  });
+                },
+                child: Icon(
+                  Icons.close_rounded,
+                  color: colorScheme.onSurfaceVariant,
+                  size: AppSizes.iconSm,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: AppSizes.spaceHeightSm),
+
+          // Error message
+          Text(
+            _errorMessage ?? 'An unknown error occurred',
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: AppSizes.spaceHeightMd),
+
+          // Action buttons
+          Row(
+            children: [
+              // Retry button
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _generateRecipe,
+                  icon: Icon(Icons.refresh_rounded, size: AppSizes.iconSm),
+                  label: Text('Retry'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: colorScheme.primary,
+                    side: BorderSide(color: colorScheme.primary),
+                    padding: EdgeInsets.symmetric(
+                      vertical: AppSizes.vPaddingSm,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: AppSizes.spaceMd),
+              // Use Demo button
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _useDemoData,
+                  icon: Icon(Icons.science_rounded, size: AppSizes.iconSm),
+                  label: Text('Try Demo'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.secondary,
+                    foregroundColor: colorScheme.onSecondary,
+                    padding: EdgeInsets.symmetric(
+                      vertical: AppSizes.vPaddingSm,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

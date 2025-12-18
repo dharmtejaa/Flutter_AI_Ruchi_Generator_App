@@ -21,6 +21,7 @@ class RecipeNutritionTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingMd),
       child: Column(
@@ -65,7 +66,7 @@ class RecipeNutritionTab extends StatelessWidget {
             _SimpleInfoCard(
               icon: Icons.lightbulb_outline,
               iconColor: const Color(0xFFFFA726),
-              bgColor: const Color(0xFFFFF8E1),
+              bgColor: colorScheme.surface,
               title: 'Chef\'s Tip',
               content: recipe.tips!,
             ),
@@ -77,7 +78,7 @@ class RecipeNutritionTab extends StatelessWidget {
             _SimpleListCard(
               icon: Icons.favorite_outline,
               iconColor: const Color(0xFF66BB6A),
-              bgColor: const Color(0xFFE8F5E9),
+              bgColor: colorScheme.surface,
               title: 'Health Benefits',
               items: recipe.healthBenefits,
             ),
@@ -700,6 +701,7 @@ class _SimpleInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(AppSizes.paddingMd),
@@ -718,7 +720,7 @@ class _SimpleInfoCard extends StatelessWidget {
                 title,
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: iconColor,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ],
@@ -727,7 +729,7 @@ class _SimpleInfoCard extends StatelessWidget {
           Text(
             content,
             style: textTheme.bodyMedium?.copyWith(
-              color: Colors.black87,
+              color: colorScheme.onSurface,
               height: 1.5,
             ),
           ),
@@ -756,6 +758,7 @@ class _SimpleListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(AppSizes.paddingMd),
@@ -774,7 +777,7 @@ class _SimpleListCard extends StatelessWidget {
                 title,
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: iconColor,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ],
@@ -792,7 +795,7 @@ class _SimpleListCard extends StatelessWidget {
                     child: Text(
                       item,
                       style: textTheme.bodyMedium?.copyWith(
-                        color: Colors.black87,
+                        color: colorScheme.onSurface,
                         height: 1.4,
                       ),
                     ),
@@ -879,27 +882,24 @@ class _SimpleChipsCard extends StatelessWidget {
         ),
         SizedBox(height: 12.h),
         // Visual Audience Chips
-        Wrap(
-          spacing: 10.w,
-          runSpacing: 10.h,
-          children: items.map((item) {
-            final audienceIcon = _getIconForAudience(item);
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(AppSizes.paddingMd),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          ),
+          child: Wrap(
+            spacing: 10.w,
+            runSpacing: 10.h,
+            children: items.map((item) {
+              final audienceIcon = _getIconForAudience(item);
 
-            return Container(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(20.r),
-                border: Border.all(
-                  color: colorScheme.outline.withValues(alpha: 0.2),
-                  width: 1,
-                ),
-              ),
-              child: Row(
+              return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: EdgeInsets.all(4.w),
+                    padding: AppSizes.paddingAllSm,
                     decoration: BoxDecoration(
                       color: colorScheme.onSurfaceVariant.withValues(
                         alpha: 0.1,
@@ -908,24 +908,23 @@ class _SimpleChipsCard extends StatelessWidget {
                     ),
                     child: Icon(
                       audienceIcon,
-                      size: 14.sp,
+                      size: AppSizes.iconSm,
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  SizedBox(width: 8.w),
+                  SizedBox(width: AppSizes.spaceSm),
                   Flexible(
                     child: Text(
                       item,
                       style: textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurface,
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
                 ],
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ),
         ),
       ],
     );
