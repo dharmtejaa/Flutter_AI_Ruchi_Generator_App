@@ -90,6 +90,13 @@ class RecipeProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Set recipe directly (used by scan screen)
+  void setRecipe(Recipe recipe) {
+    _recipe = recipe;
+    _error = null;
+    notifyListeners();
+  }
+
   void resetPreferences() {
     _selectedProvider = 'openai';
     _selectedCuisine = 'none';

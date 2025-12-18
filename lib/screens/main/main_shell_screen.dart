@@ -1,6 +1,7 @@
 import 'package:ai_ruchi/screens/entry/entry_screen.dart';
 import 'package:ai_ruchi/screens/main/placeholder_screen.dart';
 import 'package:ai_ruchi/screens/profile/profile_screen.dart';
+import 'package:ai_ruchi/screens/scan/scan_screen.dart';
 import 'package:ai_ruchi/shared/widgets/common/double_back_to_exit_wrapper.dart';
 import 'package:ai_ruchi/shared/widgets/navigation/app_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
@@ -18,11 +19,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   final List<Widget> _screens = [
     const EntryScreen(),
-    const PlaceholderScreen(
-      title: 'Scan',
-      icon: Icons.qr_code_scanner,
-      description: 'Scan ingredients or recipes using your camera',
-    ),
+    const ScanScreen(),
     const PlaceholderScreen(
       title: 'Saved Recipes',
       icon: Icons.bookmark,
