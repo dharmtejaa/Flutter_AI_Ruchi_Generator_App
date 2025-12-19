@@ -120,134 +120,142 @@ class _NutritionInfoScreenState extends State<NutritionInfoScreen> {
     final nutrition = recipe.nutrition.perServing;
     final macros = nutrition.macros;
 
-    return CustomScrollView(
-      slivers: [
-        // App Bar with iOS style back button
-        SliverAppBar(
-          pinned: true,
-          floating: false,
-          backgroundColor: colorScheme.surface,
-          surfaceTintColor: Colors.transparent,
-          leading: IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: colorScheme.onSurface,
-              size: 20.sp,
+    return Scaffold(
+      backgroundColor: colorScheme.surface,
+      appBar: AppBar(
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: colorScheme.onSurface,
+            size: 20.sp,
+          ),
+        ),
+        title: Text(
+          'Nutrition Info',
+          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Nutrition Summary Row at top
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSizes.paddingSm,
+                vertical: AppSizes.vPaddingSm,
+              ),
+              child: NutritionSummaryRow(nutrition: nutrition, isCompact: true),
             ),
-          ),
-          title: Text(
-            'Nutrition Info',
-            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-          ),
-        ),
 
-        // Sticky Nutrition Summary Header
-        SliverPersistentHeader(
-          pinned: true,
-          delegate: _NutritionSummaryHeaderDelegate(
-            nutrition: nutrition,
-            colorScheme: colorScheme,
-          ),
-        ),
+            // Content
+            Padding(
+              padding: EdgeInsets.all(AppSizes.paddingMd),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Ingredients Section
+                  _SectionHeader(
+                    title: 'Your Ingredients',
+                    icon: Icons.shopping_basket_outlined,
+                    count: ingredients.length,
+                  ),
+                  SizedBox(height: AppSizes.spaceHeightSm),
+                  _IngredientsCard(ingredients: ingredients),
 
-        // Content
-        SliverPadding(
-          padding: EdgeInsets.all(AppSizes.paddingMd),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              // Ingredients Section
-              _SectionHeader(
-                title: 'Your Ingredients',
-                icon: Icons.shopping_basket_outlined,
-                count: ingredients.length,
+                  SizedBox(height: AppSizes.spaceHeightLg),
+
+                  // Macronutrients with Pie Chart
+                  _SectionHeader(
+                    title: 'Macronutrients',
+                    icon: Icons.pie_chart_outline,
+                  ),
+                  SizedBox(height: AppSizes.spaceHeightSm),
+                  _MacroChartCard(macros: macros),
+
+                  SizedBox(height: AppSizes.spaceHeightMd),
+
+                  // Macro Details (Fiber, Sugar)
+                  _MacroDetailsGrid(macros: macros),
+
+                  // Vitamins Section
+                  if (nutrition.micros.vitamins.isNotEmpty) ...[
+                    SizedBox(height: AppSizes.spaceHeightLg),
+                    _SectionHeader(
+                      title: 'Vitamins',
+                      icon: Icons.local_pharmacy_outlined,
+                    ),
+                    SizedBox(height: AppSizes.spaceHeightSm),
+                    _NutrientsList(
+                      nutrients: nutrition.micros.vitamins,
+                      accentColor: const Color(0xFF4CAF50),
+                    ),
+                  ],
+
+                  // Minerals Section
+                  if (nutrition.micros.minerals.isNotEmpty) ...[
+                    SizedBox(height: AppSizes.spaceHeightLg),
+                    _SectionHeader(
+                      title: 'Minerals',
+                      icon: Icons.science_outlined,
+                    ),
+                    SizedBox(height: AppSizes.spaceHeightSm),
+                    _NutrientsList(
+                      nutrients: nutrition.micros.minerals,
+                      accentColor: const Color(0xFF2196F3),
+                    ),
+                  ],
+
+                  // Health Benefits
+                  if (recipe.healthBenefits.isNotEmpty) ...[
+                    SizedBox(height: AppSizes.spaceHeightLg),
+                    _SectionHeader(
+                      title: 'Health Benefits',
+                      icon: Icons.favorite_outline,
+                    ),
+                    SizedBox(height: AppSizes.spaceHeightSm),
+                    _HealthBenefitsCard(benefits: recipe.healthBenefits),
+                  ],
+
+                  // Tips Section
+                  if (recipe.tips != null && recipe.tips!.isNotEmpty) ...[
+                    SizedBox(height: AppSizes.spaceHeightLg),
+                    _SimpleInfoCard(
+                      icon: Icons.lightbulb_outline,
+                      iconColor: const Color(0xFFFFA726),
+                      title: "Chef's Tip",
+                      content: recipe.tips!,
+                    ),
+                  ],
+
+                  // Target Audience Section
+                  if (recipe.targetAudience.isNotEmpty) ...[
+                    SizedBox(height: AppSizes.spaceHeightLg),
+                    _SimpleChipsCard(
+                      icon: Icons.groups_outlined,
+                      title: 'Suitable For',
+                      items: recipe.targetAudience,
+                    ),
+                  ],
+
+                  // Disclaimer
+                  if (recipe.disclaimer.isNotEmpty) ...[
+                    SizedBox(height: AppSizes.spaceHeightLg),
+                    _DisclaimerText(disclaimer: recipe.disclaimer),
+                  ],
+
+                  SizedBox(height: AppSizes.spaceHeightXl),
+                ],
               ),
-              SizedBox(height: AppSizes.spaceHeightSm),
-              _IngredientsCard(ingredients: ingredients),
-
-              SizedBox(height: AppSizes.spaceHeightLg),
-
-              // Macronutrients with Pie Chart
-              _SectionHeader(
-                title: 'Macronutrients',
-                icon: Icons.pie_chart_outline,
-              ),
-              SizedBox(height: AppSizes.spaceHeightSm),
-              _MacroChartCard(macros: macros),
-
-              SizedBox(height: AppSizes.spaceHeightMd),
-
-              // Macro Details (Fiber, Sugar)
-              _MacroDetailsGrid(macros: macros),
-
-              // Vitamins Section
-              if (nutrition.micros.vitamins.isNotEmpty) ...[
-                SizedBox(height: AppSizes.spaceHeightLg),
-                _SectionHeader(
-                  title: 'Vitamins',
-                  icon: Icons.local_pharmacy_outlined,
-                ),
-                SizedBox(height: AppSizes.spaceHeightSm),
-                _NutrientsList(
-                  nutrients: nutrition.micros.vitamins,
-                  accentColor: const Color(0xFF4CAF50),
-                ),
-              ],
-
-              // Minerals Section
-              if (nutrition.micros.minerals.isNotEmpty) ...[
-                SizedBox(height: AppSizes.spaceHeightLg),
-                _SectionHeader(title: 'Minerals', icon: Icons.science_outlined),
-                SizedBox(height: AppSizes.spaceHeightSm),
-                _NutrientsList(
-                  nutrients: nutrition.micros.minerals,
-                  accentColor: const Color(0xFF2196F3),
-                ),
-              ],
-
-              // Health Benefits
-              if (recipe.healthBenefits.isNotEmpty) ...[
-                SizedBox(height: AppSizes.spaceHeightLg),
-                _SectionHeader(
-                  title: 'Health Benefits',
-                  icon: Icons.favorite_outline,
-                ),
-                SizedBox(height: AppSizes.spaceHeightSm),
-                _HealthBenefitsCard(benefits: recipe.healthBenefits),
-              ],
-
-              // Tips Section
-              if (recipe.tips != null && recipe.tips!.isNotEmpty) ...[
-                SizedBox(height: AppSizes.spaceHeightLg),
-                _SimpleInfoCard(
-                  icon: Icons.lightbulb_outline,
-                  iconColor: const Color(0xFFFFA726),
-                  title: "Chef's Tip",
-                  content: recipe.tips!,
-                ),
-              ],
-
-              // Target Audience Section
-              if (recipe.targetAudience.isNotEmpty) ...[
-                SizedBox(height: AppSizes.spaceHeightLg),
-                _SimpleChipsCard(
-                  icon: Icons.groups_outlined,
-                  title: 'Suitable For',
-                  items: recipe.targetAudience,
-                ),
-              ],
-
-              // Disclaimer
-              if (recipe.disclaimer.isNotEmpty) ...[
-                SizedBox(height: AppSizes.spaceHeightLg),
-                _DisclaimerText(disclaimer: recipe.disclaimer),
-              ],
-
-              SizedBox(height: AppSizes.spaceHeightXl),
-            ]),
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -417,43 +425,6 @@ class _NutritionInfoScreenState extends State<NutritionInfoScreen> {
       ),
     );
   }
-}
-
-// Sticky Header Delegate for Nutrition Summary
-class _NutritionSummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final PerServingNutrition nutrition;
-  final ColorScheme colorScheme;
-
-  _NutritionSummaryHeaderDelegate({
-    required this.nutrition,
-    required this.colorScheme,
-  });
-
-  @override
-  double get minExtent => 120.h;
-
-  @override
-  double get maxExtent => 120.h;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Container(
-      color: colorScheme.surface,
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSizes.paddingSm,
-        vertical: AppSizes.vPaddingSm,
-      ),
-      child: NutritionSummaryRow(nutrition: nutrition, isCompact: true),
-    );
-  }
-
-  @override
-  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) =>
-      true;
 }
 
 // Section Header
