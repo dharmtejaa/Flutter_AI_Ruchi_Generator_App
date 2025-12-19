@@ -2,13 +2,14 @@ import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/core/utils/recipe_helper.dart';
 import 'package:ai_ruchi/providers/recipe_provider.dart';
+import 'package:ai_ruchi/providers/saved_recipes_provider.dart';
 import 'package:ai_ruchi/shared/widgets/common/custom_snackbar.dart';
 import 'package:ai_ruchi/shared/widgets/common/nutrition_summary_row.dart';
-import 'package:ai_ruchi/shared/widgets/recipe/recipe_action_buttons.dart';
 import 'package:ai_ruchi/shared/widgets/recipe/recipe_image_widget.dart';
 import 'package:ai_ruchi/shared/widgets/recipe/recipe_ingredients_tab.dart';
 import 'package:ai_ruchi/shared/widgets/recipe/recipe_instructions_tab.dart';
 import 'package:ai_ruchi/shared/widgets/recipe/recipe_nutrition_tab.dart';
+import 'package:ai_ruchi/shared/widgets/recipe/save_recipe_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -94,13 +95,20 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
                 onPressed: () => Navigator.of(context).pop(),
               ),
               actions: [
-                IconButton(
-                  icon: Icon(
-                    Icons.bookmark_border,
-                    color: colorScheme.onSurface,
-                    size: AppSizes.iconMd,
-                  ),
-                  onPressed: () => _handleSave(context),
+                Consumer<SavedRecipesProvider>(
+                  builder: (context, savedProvider, child) {
+                    final isSaved = savedProvider.isRecipeSaved(recipe.title);
+                    return IconButton(
+                      icon: Icon(
+                        isSaved ? Icons.bookmark : Icons.bookmark_border,
+                        color: isSaved
+                            ? colorScheme.primary
+                            : colorScheme.onSurface,
+                        size: AppSizes.iconMd,
+                      ),
+                      onPressed: () => _handleSave(context),
+                    );
+                  },
                 ),
                 IconButton(
                   icon: Icon(
@@ -271,9 +279,13 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
           ],
         ),
       ),
-      bottomNavigationBar: RecipeActionButtons(
-        onRegenerate: () => _handleRegenerate(context),
-        onSave: () => _handleSave(context),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _handleRegenerate(context),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
+        icon: const Icon(Icons.refresh_rounded),
+        label: const Text('Try Again'),
+        elevation: 4,
       ),
     );
   }
@@ -283,7 +295,10 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
   }
 
   void _handleSave(BuildContext context) {
-    CustomSnackBar.showSuccess(context, 'Recipe saved successfully!');
+    final recipe = context.read<RecipeProvider>().recipe;
+    if (recipe != null) {
+      SaveRecipeDialog.show(context, recipe);
+    }
   }
 }
 

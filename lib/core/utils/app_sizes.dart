@@ -162,4 +162,6 @@ class AppSizes {
     horizontal: marginXxl,
     vertical: vMarginXxl,
   );
+
+  static double? get spaceWidthMd => null;
 }

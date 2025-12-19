@@ -1,6 +1,8 @@
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
+import 'package:ai_ruchi/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,7 +13,6 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _syncToCloud = true;
-  String _selectedTheme = 'System';
 
   @override
   Widget build(BuildContext context) {
@@ -93,17 +94,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onTap: () {},
                   ),
                   _buildDivider(context),
-                  _buildSettingsTile(
-                    context,
-                    icon: Icons.contrast,
-                    title: 'Theme',
-                    trailing: Text(
-                      _selectedTheme,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    onTap: () => _showThemeSelector(context),
+                  Consumer<ThemeProvider>(
+                    builder: (context, themeProvider, child) {
+                      return _buildSettingsTile(
+                        context,
+                        icon: _getThemeIcon(themeProvider.themeMode),
+                        title: 'Theme',
+                        trailing: Text(
+                          _getThemeDisplayName(themeProvider.themeMode),
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        onTap: () => _showThemeSelector(context),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -297,9 +302,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  String _getThemeDisplayName(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.system:
+        return 'System';
+      case ThemeMode.light:
+        return 'Light';
+      case ThemeMode.dark:
+        return 'Dark';
+    }
+  }
+
+  IconData _getThemeIcon(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.system:
+        return Icons.brightness_auto;
+      case ThemeMode.light:
+        return Icons.light_mode;
+      case ThemeMode.dark:
+        return Icons.dark_mode;
+    }
+  }
+
+  ThemeMode _getThemeModeFromString(String theme) {
+    switch (theme) {
+      case 'Light':
+        return ThemeMode.light;
+      case 'Dark':
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
+    }
+  }
+
   void _showThemeSelector(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
     showModalBottomSheet(
       context: context,
@@ -307,21 +346,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
-      builder: (context) {
+      builder: (sheetContext) {
         return SafeArea(
           child: Padding(
             padding: EdgeInsets.all(AppSizes.paddingLg),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Select Theme',
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                // Drag Handle
+                Container(
+                  width: 40.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2.r),
                   ),
                 ),
                 SizedBox(height: 16.h),
+                Text('Select Theme', style: textTheme.titleLarge),
+                SizedBox(height: 16.h),
                 ...['System', 'Light', 'Dark'].map((theme) {
+                  final isSelected =
+                      themeProvider.themeMode == _getThemeModeFromString(theme);
                   return ListTile(
                     leading: Icon(
                       theme == 'System'
@@ -329,14 +375,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           : theme == 'Light'
                           ? Icons.light_mode
                           : Icons.dark_mode,
+                      color: isSelected ? colorScheme.primary : null,
                     ),
-                    title: Text(theme),
-                    trailing: _selectedTheme == theme
+                    title: Text(
+                      theme,
+                      style: textTheme.bodyLarge?.copyWith(
+                        fontWeight: isSelected ? FontWeight.w600 : null,
+                        color: isSelected ? colorScheme.primary : null,
+                      ),
+                    ),
+                    trailing: isSelected
                         ? Icon(Icons.check, color: colorScheme.primary)
                         : null,
                     onTap: () {
-                      setState(() => _selectedTheme = theme);
-                      Navigator.pop(context);
+                      themeProvider.setThemeMode(
+                        _getThemeModeFromString(theme),
+                      );
+                      Navigator.pop(sheetContext);
                     },
                   );
                 }),

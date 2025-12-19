@@ -2,6 +2,7 @@ import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/core/utils/ingredient_helper.dart';
 import 'package:ai_ruchi/core/utils/recipe_helper.dart';
 import 'package:ai_ruchi/providers/ingredients_provider.dart';
+import 'package:ai_ruchi/shared/widgets/common/dismiss_keyboard.dart';
 import 'package:ai_ruchi/shared/widgets/navigation/app_bottom_navigation_bar.dart';
 import 'package:ai_ruchi/shared/widgets/ingredient/current_ingredients_section.dart';
 import 'package:ai_ruchi/shared/widgets/ingredient/ingredient_action_bar.dart';
@@ -49,61 +50,63 @@ class _AdjustIngredientsScreenState extends State<AdjustIngredientsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Consumer<IngredientsProvider>(
-          builder: (context, provider, child) {
-            return Column(
-              children: [
-                // Header Section
-                const IngredientHeaderWidget(title: 'Adjust Ingredients'),
+    return DismissKeyboard(
+      child: Scaffold(
+        body: SafeArea(
+          child: Consumer<IngredientsProvider>(
+            builder: (context, provider, child) {
+              return Column(
+                children: [
+                  // Header Section
+                  const IngredientHeaderWidget(title: 'Adjust Ingredients'),
 
-                // Content Section
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSizes.paddingLg,
-                      vertical: AppSizes.vPaddingMd,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Add/Remove Ingredient Input
-                        IngredientInputWidget(
-                          controller: _ingredientController,
-                          onAdd: _handleAddIngredient,
-                          hintText: 'Add/Remove ingredient...',
-                        ),
+                  // Content Section
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSizes.paddingLg,
+                        vertical: AppSizes.vPaddingMd,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Add/Remove Ingredient Input
+                          IngredientInputWidget(
+                            controller: _ingredientController,
+                            onAdd: _handleAddIngredient,
+                            hintText: 'Add/Remove ingredient...',
+                          ),
 
-                        SizedBox(height: AppSizes.spaceHeightLg),
+                          SizedBox(height: AppSizes.spaceHeightLg),
 
-                        // Current Ingredients Section
-                        const CurrentIngredientsSection(),
+                          // Current Ingredients Section
+                          const CurrentIngredientsSection(),
 
-                        SizedBox(height: AppSizes.spaceHeightLg),
+                          SizedBox(height: AppSizes.spaceHeightLg),
 
-                        // Suggested Additions Section
-                        const SuggestedAdditionsSection(),
+                          // Suggested Additions Section
+                          const SuggestedAdditionsSection(),
 
-                        SizedBox(height: AppSizes.spaceHeightXl),
-                      ],
+                          SizedBox(height: AppSizes.spaceHeightXl),
+                        ],
+                      ),
                     ),
                   ),
-                ),
 
-                // Bottom Action Bar
-                if (provider.currentIngredients.isNotEmpty)
-                  IngredientActionBar(
-                    primaryActionText: 'Regenerate Recipe',
-                    primaryActionIcon: Icons.auto_awesome,
-                    onPrimaryAction: _handleRegenerateRecipe,
-                  ),
-              ],
-            );
-          },
+                  // Bottom Action Bar
+                  if (provider.currentIngredients.isNotEmpty)
+                    IngredientActionBar(
+                      primaryActionText: 'Regenerate Recipe',
+                      primaryActionIcon: Icons.auto_awesome,
+                      onPrimaryAction: _handleRegenerateRecipe,
+                    ),
+                ],
+              );
+            },
+          ),
         ),
+        bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 0),
       ),
-      bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 0),
     );
   }
 }

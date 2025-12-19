@@ -1,8 +1,8 @@
 import 'package:ai_ruchi/screens/entry/entry_screen.dart';
-import 'package:ai_ruchi/screens/main/placeholder_screen.dart';
 import 'package:ai_ruchi/screens/profile/profile_screen.dart';
+import 'package:ai_ruchi/screens/saved/saved_recipes_screen.dart';
 import 'package:ai_ruchi/screens/scan/scan_screen.dart';
-import 'package:ai_ruchi/shared/widgets/common/double_back_to_exit_wrapper.dart';
+import 'package:ai_ruchi/shared/widgets/common/double_back_to_exit.dart';
 import 'package:ai_ruchi/shared/widgets/navigation/app_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,11 +20,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   final List<Widget> _screens = [
     const EntryScreen(),
     const ScanScreen(),
-    const PlaceholderScreen(
-      title: 'Saved Recipes',
-      icon: Icons.bookmark,
-      description: 'Your saved recipes will appear here',
-    ),
+    const SavedRecipesScreen(),
     const ProfileScreen(),
   ];
 
@@ -59,7 +55,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
       ),
     );
 
-    return DoubleBackToExitWrapper(
+    return DoubleBackToExit(
       child: Scaffold(
         body: IndexedStack(index: _currentIndex, children: _screens),
         bottomNavigationBar: AppBottomNavigationBar(

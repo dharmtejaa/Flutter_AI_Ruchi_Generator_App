@@ -7,6 +7,7 @@ import 'core/theme/app_theme.dart';
 import 'providers/theme_provider.dart';
 import 'providers/ingredients_provider.dart';
 import 'providers/recipe_provider.dart';
+import 'providers/saved_recipes_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +31,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => IngredientsProvider()),
         ChangeNotifierProvider(create: (_) => RecipeProvider()),
+        ChangeNotifierProvider(create: (_) => SavedRecipesProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

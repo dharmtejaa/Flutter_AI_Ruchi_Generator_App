@@ -1,3 +1,4 @@
+import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/shared/widgets/common/custom_snackbar.dart';
 import 'package:flutter/material.dart';
@@ -50,23 +51,7 @@ class AppBottomNavigationBar extends StatelessWidget {
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(AppSizes.radiusXxxl),
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.shadow.withValues(alpha: 0.15),
-              blurRadius: 20,
-              offset: const Offset(0, 5),
-              spreadRadius: 2,
-            ),
-            BoxShadow(
-              color: colorScheme.primary.withValues(alpha: 0.05),
-              blurRadius: 40,
-              offset: const Offset(0, 10),
-            ),
-          ],
-          border: Border.all(
-            color: colorScheme.outline.withValues(alpha: 0.1),
-            width: 1,
-          ),
+          boxShadow: AppShadows.elevatedShadow(context),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -215,15 +200,6 @@ class _FloatingNavItemState extends State<_FloatingNavItem>
               decoration: BoxDecoration(
                 color: widget.isActive ? colorScheme.primary : null,
                 borderRadius: BorderRadius.circular(AppSizes.radiusXl),
-                boxShadow: widget.isActive
-                    ? [
-                        BoxShadow(
-                          color: colorScheme.primary.withValues(alpha: 0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : null,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,

@@ -5,6 +5,7 @@ import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/models/image_recipe_response.dart';
 import 'package:ai_ruchi/providers/recipe_provider.dart';
 import 'package:ai_ruchi/shared/widgets/common/custom_snackbar.dart';
+import 'package:ai_ruchi/shared/widgets/recipe/recipe_preferences_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -24,9 +25,6 @@ class _ScanScreenState extends State<ScanScreen>
 
   File? _selectedImage;
   bool _isLoading = false;
-  String _selectedProvider = 'gemini';
-  String _selectedCuisine = 'Any';
-  String _selectedDietary = 'none';
   List<String>? _extractedIngredients;
 
   // Loading and error states
@@ -90,6 +88,19 @@ class _ScanScreenState extends State<ScanScreen>
       return;
     }
 
+    // Show preferences dialog first
+    final shouldGenerate = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (context) => const RecipePreferencesDialog(),
+      ),
+    );
+
+    if (shouldGenerate != true || !mounted) return;
+
+    // Get preferences from provider
+    final recipeProvider = context.read<RecipeProvider>();
+
     setState(() {
       _isLoading = true;
       _loadingMessage = 'Analyzing image...';
@@ -99,13 +110,13 @@ class _ScanScreenState extends State<ScanScreen>
 
     try {
       final preferences = RecipePreferences(
-        cuisine: _selectedCuisine,
-        dietary: _selectedDietary,
+        cuisine: recipeProvider.selectedCuisine,
+        dietary: recipeProvider.selectedDietary,
       );
 
       final response = await ImageRecipeApiService.generateRecipeFromImage(
         imageFile: _selectedImage!,
-        provider: _selectedProvider,
+        provider: recipeProvider.selectedProvider,
         preferences: preferences,
         onRetry: (attempt, maxAttempts) {
           if (mounted) {
@@ -216,10 +227,6 @@ class _ScanScreenState extends State<ScanScreen>
                 _buildImagePicker(colorScheme, textTheme),
                 SizedBox(height: AppSizes.spaceHeightLg),
 
-                // Preferences Section
-                _buildPreferencesSection(colorScheme, textTheme),
-                SizedBox(height: AppSizes.spaceHeightLg),
-
                 // Error State with Retry and Demo buttons
                 if (_showError && _errorMessage != null)
                   _buildErrorSection(colorScheme, textTheme),
@@ -246,22 +253,11 @@ class _ScanScreenState extends State<ScanScreen>
       children: [
         Row(
           children: [
-            Container(
-              padding: EdgeInsets.all(AppSizes.paddingSm),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    colorScheme.primary,
-                    colorScheme.primary.withValues(alpha: 0.8),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                boxShadow: AppShadows.cardShadow(context),
-              ),
-              child: Icon(
-                Icons.document_scanner_rounded,
-                color: colorScheme.onPrimary,
-                size: AppSizes.iconLg,
+            IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: Icon(
+                Icons.arrow_back_ios_new,
+                color: colorScheme.onSurface,
               ),
             ),
             SizedBox(width: AppSizes.spaceMd),
@@ -295,12 +291,12 @@ class _ScanScreenState extends State<ScanScreen>
         children: [
           // Image Preview or Placeholder
           GestureDetector(
-            onTap: () => _showImageSourceDialog(),
+            onTap: () => _pickImage(ImageSource.gallery),
             child: Container(
-              height: 220.h,
+              height: 200.h,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHigh,
+                color: colorScheme.surface,
                 borderRadius: BorderRadius.vertical(
                   top: Radius.circular(AppSizes.radiusXl),
                 ),
@@ -336,20 +332,20 @@ class _ScanScreenState extends State<ScanScreen>
                         ),
                         // Remove button
                         Positioned(
-                          top: AppSizes.paddingSm,
-                          right: AppSizes.paddingSm,
+                          top: AppSizes.paddingXs,
+                          right: AppSizes.paddingXs,
                           child: GestureDetector(
                             onTap: _clearImage,
                             child: Container(
-                              padding: EdgeInsets.all(AppSizes.paddingXs),
+                              padding: AppSizes.paddingAllXs,
                               decoration: BoxDecoration(
-                                color: colorScheme.error,
+                                color: colorScheme.primary,
                                 shape: BoxShape.circle,
                                 boxShadow: AppShadows.elevatedShadow(context),
                               ),
                               child: Icon(
                                 Icons.close_rounded,
-                                color: colorScheme.onError,
+                                color: colorScheme.onPrimary,
                                 size: AppSizes.iconSm,
                               ),
                             ),
@@ -357,36 +353,20 @@ class _ScanScreenState extends State<ScanScreen>
                         ),
                         // Image selected indicator
                         Positioned(
-                          bottom: AppSizes.paddingSm,
-                          left: AppSizes.paddingSm,
+                          bottom: AppSizes.paddingXs,
+                          left: AppSizes.paddingXs,
                           child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: AppSizes.paddingSm,
-                              vertical: AppSizes.vPaddingXs,
-                            ),
+                            padding: AppSizes.paddingAllXs,
                             decoration: BoxDecoration(
                               color: colorScheme.primary,
                               borderRadius: BorderRadius.circular(
-                                AppSizes.radiusMd,
+                                AppSizes.radiusXxxl,
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.check_circle_rounded,
-                                  color: colorScheme.onPrimary,
-                                  size: AppSizes.iconSm,
-                                ),
-                                SizedBox(width: AppSizes.spaceXs),
-                                Text(
-                                  'Image Ready',
-                                  style: textTheme.labelMedium?.copyWith(
-                                    color: colorScheme.onPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                            child: Icon(
+                              Icons.check_circle_rounded,
+                              color: colorScheme.onPrimary,
+                              size: AppSizes.iconSm,
                             ),
                           ),
                         ),
@@ -396,15 +376,15 @@ class _ScanScreenState extends State<ScanScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          padding: EdgeInsets.all(AppSizes.paddingLg),
+                          padding: EdgeInsets.all(AppSizes.paddingMd),
                           decoration: BoxDecoration(
                             color: colorScheme.primary.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            Icons.add_photo_alternate_rounded,
+                            Icons.add_photo_alternate_outlined,
                             color: colorScheme.primary,
-                            size: AppSizes.iconXl,
+                            size: AppSizes.iconLg,
                           ),
                         ),
                         SizedBox(height: AppSizes.spaceHeightMd),
@@ -421,22 +401,28 @@ class _ScanScreenState extends State<ScanScreen>
 
           // Image Source Buttons
           Padding(
-            padding: EdgeInsets.all(AppSizes.paddingMd),
+            padding: EdgeInsets.all(AppSizes.paddingXs),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Expanded(
                   child: _ImageSourceButton(
-                    icon: Icons.camera_alt_rounded,
+                    iconColor: colorScheme.primary,
+                    titleColor: colorScheme.primary,
+                    icon: Icons.camera_alt_outlined,
                     label: 'Camera',
                     onTap: () => _pickImage(ImageSource.camera),
                     colorScheme: colorScheme,
                     textTheme: textTheme,
                   ),
                 ),
-                SizedBox(width: AppSizes.spaceMd),
+
                 Expanded(
                   child: _ImageSourceButton(
-                    icon: Icons.photo_library_rounded,
+                    iconColor: colorScheme.primary,
+                    titleColor: colorScheme.primary,
+                    icon: Icons.photo_library_outlined,
                     label: 'Gallery',
                     onTap: () => _pickImage(ImageSource.gallery),
                     colorScheme: colorScheme,
@@ -447,170 +433,6 @@ class _ScanScreenState extends State<ScanScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPreferencesSection(
-    ColorScheme colorScheme,
-    TextTheme textTheme,
-  ) {
-    return Container(
-      padding: EdgeInsets.all(AppSizes.paddingMd),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
-        boxShadow: AppShadows.cardShadow(context),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section Header
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(AppSizes.paddingXs),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-                ),
-                child: Icon(
-                  Icons.tune_rounded,
-                  color: colorScheme.primary,
-                  size: AppSizes.iconSm,
-                ),
-              ),
-              SizedBox(width: AppSizes.spaceSm),
-              Text('Preferences', style: textTheme.titleMedium),
-            ],
-          ),
-          SizedBox(height: AppSizes.spaceHeightMd),
-
-          // AI Provider Selection
-          Text('AI Provider', style: textTheme.labelMedium),
-          SizedBox(height: AppSizes.spaceHeightSm),
-          Row(
-            children: ImageRecipeApiService.providers.map((provider) {
-              final isSelected = _selectedProvider == provider;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _selectedProvider = provider),
-                  child: Container(
-                    margin: EdgeInsets.only(
-                      right: provider != ImageRecipeApiService.providers.last
-                          ? AppSizes.spaceSm
-                          : 0,
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      vertical: AppSizes.vPaddingSm,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? colorScheme.primary
-                          : colorScheme.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                      border: Border.all(
-                        color: isSelected
-                            ? colorScheme.primary
-                            : colorScheme.outline,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          provider == 'openai'
-                              ? Icons.smart_toy_rounded
-                              : Icons.auto_awesome_rounded,
-                          color: isSelected
-                              ? colorScheme.onPrimary
-                              : colorScheme.onSurface,
-                          size: AppSizes.iconSm,
-                        ),
-                        SizedBox(width: AppSizes.spaceXs),
-                        Text(
-                          provider.toUpperCase(),
-                          style: textTheme.labelMedium?.copyWith(
-                            color: isSelected
-                                ? colorScheme.onPrimary
-                                : colorScheme.onSurface,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          SizedBox(height: AppSizes.spaceHeightMd),
-
-          // Cuisine Selection
-          Text('Cuisine', style: textTheme.labelMedium),
-          SizedBox(height: AppSizes.spaceHeightSm),
-          _buildDropdown(
-            value: _selectedCuisine,
-            items: ImageRecipeApiService.cuisines,
-            onChanged: (value) => setState(() => _selectedCuisine = value!),
-            colorScheme: colorScheme,
-            textTheme: textTheme,
-          ),
-          SizedBox(height: AppSizes.spaceHeightMd),
-
-          // Dietary Selection
-          Text('Dietary Preference', style: textTheme.labelMedium),
-          SizedBox(height: AppSizes.spaceHeightSm),
-          _buildDropdown(
-            value: _selectedDietary,
-            items: ImageRecipeApiService.dietaryOptions,
-            onChanged: (value) => setState(() => _selectedDietary = value!),
-            colorScheme: colorScheme,
-            textTheme: textTheme,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDropdown({
-    required String value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-    required ColorScheme colorScheme,
-    required TextTheme textTheme,
-  }) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSizes.paddingMd,
-        vertical: AppSizes.vPaddingXs,
-      ),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        border: Border.all(color: colorScheme.outline),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          isExpanded: true,
-          icon: Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          dropdownColor: colorScheme.surface,
-          style: textTheme.bodyMedium,
-          items: items.map((item) {
-            return DropdownMenuItem(
-              value: item,
-              child: Text(
-                item.replaceAll('-', ' ').toUpperCase(),
-                style: textTheme.bodyMedium,
-              ),
-            );
-          }).toList(),
-          onChanged: onChanged,
-        ),
       ),
     );
   }
@@ -692,7 +514,7 @@ class _ScanScreenState extends State<ScanScreen>
   Widget _buildGenerateButton(ColorScheme colorScheme, TextTheme textTheme) {
     return SizedBox(
       width: double.infinity,
-      height: 56.h,
+      height: 45.h,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _generateRecipe,
         style: ElevatedButton.styleFrom(
@@ -863,133 +685,43 @@ class _ScanScreenState extends State<ScanScreen>
       ),
     );
   }
-
-  void _showImageSourceDialog() {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppSizes.radiusXl),
-        ),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.all(AppSizes.paddingLg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40.w,
-                height: 4.h,
-                decoration: BoxDecoration(
-                  color: colorScheme.outline,
-                  borderRadius: BorderRadius.circular(2.r),
-                ),
-              ),
-              SizedBox(height: AppSizes.spaceHeightLg),
-              Text('Select Image Source', style: textTheme.titleLarge),
-              SizedBox(height: AppSizes.spaceHeightLg),
-              Row(
-                children: [
-                  Expanded(
-                    child: _ImageSourceButton(
-                      icon: Icons.camera_alt_rounded,
-                      label: 'Camera',
-                      onTap: () {
-                        Navigator.pop(context);
-                        _pickImage(ImageSource.camera);
-                      },
-                      colorScheme: colorScheme,
-                      textTheme: textTheme,
-                      isLarge: true,
-                    ),
-                  ),
-                  SizedBox(width: AppSizes.spaceMd),
-                  Expanded(
-                    child: _ImageSourceButton(
-                      icon: Icons.photo_library_rounded,
-                      label: 'Gallery',
-                      onTap: () {
-                        Navigator.pop(context);
-                        _pickImage(ImageSource.gallery);
-                      },
-                      colorScheme: colorScheme,
-                      textTheme: textTheme,
-                      isLarge: true,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: AppSizes.spaceHeightLg),
-            ],
-          ),
-        );
-      },
-    );
-  }
 }
 
 class _ImageSourceButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Color iconColor;
+  final Color titleColor;
   final ColorScheme colorScheme;
   final TextTheme textTheme;
-  final bool isLarge;
 
   const _ImageSourceButton({
     required this.icon,
     required this.label,
     required this.onTap,
+    required this.iconColor,
+    required this.titleColor,
     required this.colorScheme,
     required this.textTheme,
-    this.isLarge = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            vertical: isLarge ? AppSizes.vPaddingLg : AppSizes.vPaddingSm,
-          ),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-            border: Border.all(color: colorScheme.outline),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: EdgeInsets.all(
-                  isLarge ? AppSizes.paddingMd : AppSizes.paddingSm,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: colorScheme.primary,
-                  size: isLarge ? AppSizes.iconLg : AppSizes.iconMd,
-                ),
-              ),
-              SizedBox(height: AppSizes.spaceHeightSm),
-              Text(
-                label,
-                style: isLarge ? textTheme.titleSmall : textTheme.labelMedium,
-              ),
-            ],
-          ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: AppSizes.paddingAllXs,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: iconColor, size: AppSizes.iconSm),
+            SizedBox(width: AppSizes.spaceSm),
+            Text(
+              label,
+              style: textTheme.labelLarge?.copyWith(color: titleColor),
+            ),
+          ],
         ),
       ),
     );

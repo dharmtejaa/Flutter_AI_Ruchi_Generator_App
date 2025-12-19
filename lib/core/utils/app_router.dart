@@ -1,6 +1,7 @@
 import 'package:ai_ruchi/models/recipe.dart';
 import 'package:ai_ruchi/screens/main/main_shell_screen.dart';
 import 'package:ai_ruchi/screens/nutrition/nutrition_detail_screen.dart';
+import 'package:ai_ruchi/screens/nutrition/nutrition_info_screen.dart';
 import 'package:ai_ruchi/screens/recipe/adjust_ingredients_screen.dart';
 import 'package:ai_ruchi/screens/recipe/recipe_generated_screen.dart';
 import 'package:ai_ruchi/screens/recipe/recipe_generation_loading_screen.dart';
@@ -88,6 +89,22 @@ class AppRouter {
               animation: animation,
               secondaryAnimation: secondaryAnimation,
               transitionType: SharedAxisTransitionType.scaled,
+              child: child,
+            );
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/nutrition-info',
+        name: 'NutritionInfo',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const NutritionInfoScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SharedAxisTransition(
+              animation: animation,
+              secondaryAnimation: secondaryAnimation,
+              transitionType: SharedAxisTransitionType.horizontal,
               child: child,
             );
           },

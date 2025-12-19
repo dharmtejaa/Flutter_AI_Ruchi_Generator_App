@@ -3,6 +3,7 @@ import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/core/utils/ingredient_helper.dart';
 import 'package:ai_ruchi/providers/ingredients_provider.dart';
 import 'package:ai_ruchi/providers/recipe_provider.dart';
+import 'package:ai_ruchi/shared/widgets/common/dismiss_keyboard.dart';
 import 'package:ai_ruchi/shared/widgets/ingredient/current_ingredients_section.dart';
 import 'package:ai_ruchi/shared/widgets/ingredient/ingredient_action_bar.dart';
 import 'package:ai_ruchi/shared/widgets/ingredient/ingredient_header_widget.dart';
@@ -75,78 +76,80 @@ class _EntryScreenState extends State<EntryScreen>
         final hasIngredients =
             ingredientsProvider.currentIngredients.isNotEmpty;
 
-        return SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Animated Header Section
-              FadeTransition(
-                opacity: _headerAnimation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, -0.2),
-                    end: Offset.zero,
-                  ).animate(_headerAnimation),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSizes.paddingMd,
-                      vertical: AppSizes.vPaddingMd,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      boxShadow: AppShadows.elevatedShadow(context),
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(AppSizes.radiusXxxl),
-                        bottomRight: Radius.circular(AppSizes.radiusXxxl),
+        return DismissKeyboard(
+          child: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Animated Header Section
+                FadeTransition(
+                  opacity: _headerAnimation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, -0.2),
+                      end: Offset.zero,
+                    ).animate(_headerAnimation),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSizes.paddingMd,
+                        vertical: AppSizes.vPaddingMd,
                       ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Title
-                        const IngredientHeaderWidget(
-                          title: 'What\'s in your kitchen?',
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        boxShadow: AppShadows.elevatedShadow(context),
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(AppSizes.radiusXxxl),
+                          bottomRight: Radius.circular(AppSizes.radiusXxxl),
                         ),
-                        SizedBox(height: AppSizes.spaceHeightSm),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Title
+                          const IngredientHeaderWidget(
+                            title: 'What\'s in your kitchen?',
+                          ),
+                          SizedBox(height: AppSizes.spaceHeightSm),
 
-                        // Add Ingredient Input
-                        IngredientInputWidget(
-                          controller: _ingredientController,
-                          onAdd: _handleAddIngredient,
-                          focusNode: _ingredientFocusNode,
-                          hintText:
-                              'Type an ingredient (e.g., 2 eggs, chicken...)',
-                        ),
-                      ],
+                          // Add Ingredient Input
+                          IngredientInputWidget(
+                            controller: _ingredientController,
+                            onAdd: _handleAddIngredient,
+                            focusNode: _ingredientFocusNode,
+                            hintText:
+                                'Type an ingredient (e.g., 2 eggs, chicken...)',
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              // Content Section
-              Expanded(
-                child: hasIngredients
-                    ? _buildIngredientsContent(
-                        ingredientsProvider,
-                        colorScheme,
-                        textTheme,
-                      )
-                    : _buildEmptyState(colorScheme, textTheme),
-              ),
-
-              // Bottom Action Bar
-              if (hasIngredients)
-                IngredientActionBar(
-                  primaryActionText: 'Generate Recipe',
-                  primaryActionIcon: Icons.auto_awesome,
-                  onPrimaryAction: _handleGenerateRecipe,
-                  secondaryActionText: 'Nutrition Info',
-                  secondaryActionIcon: Icons.health_and_safety_outlined,
-                  onSecondaryAction: () {
-                    // TODO: Implement nutrition info
-                  },
+                // Content Section
+                Expanded(
+                  child: hasIngredients
+                      ? _buildIngredientsContent(
+                          ingredientsProvider,
+                          colorScheme,
+                          textTheme,
+                        )
+                      : _buildEmptyState(colorScheme, textTheme),
                 ),
-            ],
+
+                // Bottom Action Bar
+                if (hasIngredients)
+                  IngredientActionBar(
+                    primaryActionText: 'Generate Recipe',
+                    primaryActionIcon: Icons.auto_awesome,
+                    onPrimaryAction: _handleGenerateRecipe,
+                    secondaryActionText: 'Nutrition Info',
+                    secondaryActionIcon: Icons.health_and_safety_outlined,
+                    onSecondaryAction: () {
+                      context.push('/nutrition-info');
+                    },
+                  ),
+              ],
+            ),
           ),
         );
       },

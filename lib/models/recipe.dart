@@ -65,6 +65,25 @@ class Recipe {
       imageUrl: json['imageUrl']?.toString(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'description': description,
+      'ingredients': ingredients.map((e) => e.toJson()).toList(),
+      'instructions': instructions,
+      'prepTime': prepTime,
+      'cookTime': cookTime,
+      'servings': servings,
+      'difficulty': difficulty,
+      'tips': tips,
+      'nutrition': nutrition.toJson(),
+      'targetAudience': targetAudience,
+      'healthBenefits': healthBenefits,
+      'disclaimer': disclaimer,
+      'imageUrl': imageUrl,
+    };
+  }
 }
 
 class RecipeIngredient {
@@ -85,6 +104,10 @@ class RecipeIngredient {
       unit: json['unit']?.toString() ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {'name': name, 'amount': amount, 'unit': unit};
+  }
 }
 
 class Nutrition {
@@ -96,6 +119,10 @@ class Nutrition {
     return Nutrition(
       perServing: PerServingNutrition.fromJson(json['perServing'] ?? {}),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'perServing': perServing.toJson()};
   }
 }
 
@@ -117,6 +144,14 @@ class PerServingNutrition {
       micros: Micros.fromJson(json['micros'] ?? {}),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'calories': calories.toJson(),
+      'macros': macros.toJson(),
+      'micros': micros.toJson(),
+    };
+  }
 }
 
 class NutritionValue {
@@ -130,6 +165,10 @@ class NutritionValue {
       value: (json['value'] ?? 0).toDouble(),
       unit: json['unit']?.toString() ?? '',
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'value': value, 'unit': unit};
   }
 }
 
@@ -169,6 +208,16 @@ class Macros {
           : null,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'carbohydrates': carbohydrates.toJson(),
+      'protein': protein.toJson(),
+      'fat': fat.toJson(),
+      if (fiber != null) 'fiber': fiber!.toJson(),
+      if (sugar != null) 'sugar': sugar!.toJson(),
+    };
+  }
 }
 
 class MacroNutrient extends NutritionValue {
@@ -186,6 +235,11 @@ class MacroNutrient extends NutritionValue {
       unit: json['unit']?.toString() ?? '',
       percentage: (json['percentage'] ?? 0).toDouble(),
     );
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {'value': value, 'unit': unit, 'percentage': percentage};
   }
 }
 
@@ -321,6 +375,29 @@ class Micros {
           : null,
       zinc: json['zinc'] != null ? NutritionValue.fromJson(json['zinc']) : null,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (vitaminA != null) 'vitaminA': vitaminA!.toJson(),
+      if (vitaminC != null) 'vitaminC': vitaminC!.toJson(),
+      if (vitaminD != null) 'vitaminD': vitaminD!.toJson(),
+      if (vitaminE != null) 'vitaminE': vitaminE!.toJson(),
+      if (vitaminK != null) 'vitaminK': vitaminK!.toJson(),
+      if (thiamin != null) 'thiamin': thiamin!.toJson(),
+      if (riboflavin != null) 'riboflavin': riboflavin!.toJson(),
+      if (niacin != null) 'niacin': niacin!.toJson(),
+      if (vitaminB6 != null) 'vitaminB6': vitaminB6!.toJson(),
+      if (folate != null) 'folate': folate!.toJson(),
+      if (vitaminB12 != null) 'vitaminB12': vitaminB12!.toJson(),
+      if (calcium != null) 'calcium': calcium!.toJson(),
+      if (iron != null) 'iron': iron!.toJson(),
+      if (magnesium != null) 'magnesium': magnesium!.toJson(),
+      if (phosphorus != null) 'phosphorus': phosphorus!.toJson(),
+      if (potassium != null) 'potassium': potassium!.toJson(),
+      if (sodium != null) 'sodium': sodium!.toJson(),
+      if (zinc != null) 'zinc': zinc!.toJson(),
+    };
   }
 }
 
