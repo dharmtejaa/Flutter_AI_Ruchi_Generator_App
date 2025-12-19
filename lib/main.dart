@@ -12,11 +12,14 @@ import 'providers/saved_recipes_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Lock orientation to portrait only
-  SystemChrome.setPreferredOrientations([
+  // Lock orientation to portrait only - must await this before runApp
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+
+  // Ensure screen size is initialized for ScreenUtil (fixes release mode blank screen)
+  await ScreenUtil.ensureScreenSize();
 
   runApp(const MyApp());
 }

@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for network requests (API calls) in release mode -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="ai_ruchi"
         android:name="${applicationName}"
