@@ -38,40 +38,43 @@ class AppBottomNavigationBar extends StatelessWidget {
       ),
     ];
 
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSizes.paddingLg,
-        vertical: 8.h,
-      ),
+    return SafeArea(
+      top: false,
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: AppSizes.paddingSm,
+          horizontal: AppSizes.paddingLg,
           vertical: 8.h,
         ),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppSizes.radiusXxxl),
-          boxShadow: AppShadows.elevatedShadow(context),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: List.generate(items.length, (index) {
-            final item = items[index];
-            final isActive = currentIndex == index;
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSizes.paddingSm,
+            vertical: 8.h,
+          ),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppSizes.radiusXxxl),
+            boxShadow: AppShadows.elevatedShadow(context),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(items.length, (index) {
+              final item = items[index];
+              final isActive = currentIndex == index;
 
-            return _FloatingNavItem(
-              icon: isActive ? item.activeIcon : item.icon,
-              label: item.label,
-              isActive: isActive,
-              onTap: () {
-                if (onTap != null) {
-                  onTap!(index);
-                } else {
-                  _defaultOnTap(context, index);
-                }
-              },
-            );
-          }),
+              return _FloatingNavItem(
+                icon: isActive ? item.activeIcon : item.icon,
+                label: item.label,
+                isActive: isActive,
+                onTap: () {
+                  if (onTap != null) {
+                    onTap!(index);
+                  } else {
+                    _defaultOnTap(context, index);
+                  }
+                },
+              );
+            }),
+          ),
         ),
       ),
     );
