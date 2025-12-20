@@ -9,7 +9,7 @@ import 'package:ai_ruchi/shared/widgets/ingredient/current_ingredients_section.d
 import 'package:ai_ruchi/shared/widgets/ingredient/ingredient_action_bar.dart';
 import 'package:ai_ruchi/shared/widgets/ingredient/ingredient_header_widget.dart';
 import 'package:ai_ruchi/shared/widgets/ingredient/ingredient_input_widget.dart';
-import 'package:ai_ruchi/shared/widgets/ingredient/suggested_additions_section.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -173,10 +173,10 @@ class _EntryScreenState extends State<EntryScreen>
           // Current Ingredients Section
           const CurrentIngredientsSection(),
 
-          SizedBox(height: AppSizes.spaceHeightSm),
+          SizedBox(height: AppSizes.spaceHeightLg),
 
-          // Suggested Additions Section
-          const SuggestedAdditionsSection(),
+          // Categorized Ingredient Suggestions (always visible)
+          const CategorizedIngredientSuggestions(),
 
           SizedBox(height: AppSizes.spaceHeightLg),
         ],
@@ -190,11 +190,7 @@ class _EntryScreenState extends State<EntryScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Categorized Ingredient Suggestions
-          const CategorizedIngredientSuggestions(),
-          SizedBox(height: AppSizes.spaceHeightXl),
-
-          // Empty State Message
+          // Empty State Message (on top)
           Center(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingXl),
@@ -233,75 +229,18 @@ class _EntryScreenState extends State<EntryScreen>
                       height: 1.5,
                     ),
                   ),
-                  SizedBox(height: AppSizes.spaceHeightXl),
-                  // Quick add suggestions
-                  Wrap(
-                    spacing: AppSizes.spaceSm,
-                    runSpacing: AppSizes.spaceHeightSm,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      _QuickAddChip(
-                        label: '🥚 Eggs',
-                        onTap: () => _quickAdd('eggs'),
-                      ),
-                      _QuickAddChip(
-                        label: '🍗 Chicken',
-                        onTap: () => _quickAdd('chicken'),
-                      ),
-                      _QuickAddChip(
-                        label: '🍅 Tomatoes',
-                        onTap: () => _quickAdd('tomatoes'),
-                      ),
-                      _QuickAddChip(
-                        label: '🧅 Onions',
-                        onTap: () => _quickAdd('onions'),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
           ),
+
+          SizedBox(height: AppSizes.spaceHeightXl),
+
+          // Categorized Ingredient Suggestions (on bottom)
+          const CategorizedIngredientSuggestions(),
+
           SizedBox(height: AppSizes.spaceHeightXl),
         ],
-      ),
-    );
-  }
-
-  void _quickAdd(String ingredient) {
-    _ingredientController.text = ingredient;
-    _handleAddIngredient();
-  }
-}
-
-class _QuickAddChip extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _QuickAddChip({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: AppSizes.paddingMd,
-          vertical: AppSizes.vPaddingSm,
-        ),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppSizes.radiusXl),
-          border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
-          boxShadow: AppShadows.cardShadow(context),
-        ),
-        child: Text(
-          label,
-          style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-        ),
       ),
     );
   }

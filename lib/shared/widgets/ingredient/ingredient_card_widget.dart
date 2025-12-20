@@ -316,9 +316,7 @@ class _IngredientCardWidgetState extends State<IngredientCardWidget>
                   // Remove button
                   GestureDetector(
                     onTap: () {
-                      _animationController.reverse().then((_) {
-                        provider.removeIngredient(widget.ingredient.id);
-                      });
+                      provider.removeIngredient(widget.ingredient.id);
                     },
                     child: Icon(
                       Icons.delete_outline_rounded,

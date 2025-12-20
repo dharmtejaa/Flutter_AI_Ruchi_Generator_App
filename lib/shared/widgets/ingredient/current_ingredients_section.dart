@@ -27,7 +27,7 @@ class CurrentIngredientsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header row with title and count
+        // Header row with title, clear all, and count
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -35,35 +35,54 @@ class CurrentIngredientsSection extends StatelessWidget {
               title ?? 'Current Ingredients',
               style: textTheme.headlineSmall,
             ),
-            if (showCount && count > 0)
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSizes.paddingSm,
-                  vertical: 4.h,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.shopping_basket,
-                      size: AppSizes.iconsUxs,
-                      color: colorScheme.primary,
+            Row(
+              children: [
+                // Count badge
+                if (showCount && count > 0) ...[
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSizes.paddingSm,
+                      vertical: 4.h,
                     ),
-                    SizedBox(width: 4.w),
-                    Text(
-                      '$count items',
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.shopping_basket,
+                          size: AppSizes.iconsUxs,
+                          color: colorScheme.primary,
+                        ),
+                        SizedBox(width: 4.w),
+                        Text(
+                          '$count items',
+                          style: textTheme.labelMedium?.copyWith(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: AppSizes.spaceSm),
+                ],
+                // Clear All button
+                if (count > 0)
+                  GestureDetector(
+                    onTap: () => provider.clearAllIngredients(),
+                    child: Text(
+                      'Clear All',
                       style: textTheme.labelMedium?.copyWith(
                         color: colorScheme.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
+              ],
+            ),
           ],
         ),
         SizedBox(height: AppSizes.spaceHeightMd),

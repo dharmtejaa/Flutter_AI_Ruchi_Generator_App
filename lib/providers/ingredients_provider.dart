@@ -31,6 +31,11 @@ class IngredientsProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void clearAllIngredients() {
+    _currentIngredients.clear();
+    notifyListeners();
+  }
+
   void updateIngredientQuantity(String id, double quantity) {
     final index = _currentIngredients.indexWhere((ing) => ing.id == id);
     if (index != -1) {
@@ -74,6 +79,21 @@ class IngredientsProvider with ChangeNotifier {
       unit: unit,
     );
     addIngredient(newIngredient);
+  }
+
+  /// Check if an ingredient exists by name (case-insensitive)
+  bool hasIngredientByName(String name) {
+    return _currentIngredients.any(
+      (ingredient) => ingredient.name.toLowerCase() == name.toLowerCase(),
+    );
+  }
+
+  /// Remove an ingredient by name (case-insensitive)
+  void removeIngredientByName(String name) {
+    _currentIngredients.removeWhere(
+      (ingredient) => ingredient.name.toLowerCase() == name.toLowerCase(),
+    );
+    notifyListeners();
   }
 
   /// Parse and add ingredient from text input

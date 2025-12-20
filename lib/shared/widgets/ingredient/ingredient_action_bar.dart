@@ -71,10 +71,7 @@ class IngredientActionBar extends StatelessWidget {
 
     if (isBottomBar) {
       return Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: AppSizes.paddingXs,
-          vertical: AppSizes.vPaddingXs,
-        ),
+        padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingXs),
         child: content,
       );
     } else {

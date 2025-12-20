@@ -21,7 +21,7 @@ class IngredientHeaderWidget extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(
         //horizontal: AppSizes.paddingMd,
-        vertical: AppSizes.vPaddingLg,
+        vertical: AppSizes.vPaddingXs,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

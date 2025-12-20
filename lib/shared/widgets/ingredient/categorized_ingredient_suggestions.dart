@@ -2,7 +2,7 @@ import 'package:ai_ruchi/core/data/ingredient_categories.dart';
 import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/providers/ingredients_provider.dart';
-import 'package:ai_ruchi/shared/widgets/common/custom_snackbar.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -21,7 +21,8 @@ class CategorizedIngredientSuggestions extends StatefulWidget {
 class _CategorizedIngredientSuggestionsState
     extends State<CategorizedIngredientSuggestions>
     with TickerProviderStateMixin {
-  final Set<String> _expandedCategories = {};
+  final List<String> _expandedCategories = []; // List to maintain order
+  final Map<String, GlobalKey> _categoryKeys = {};
   late AnimationController _arrowAnimationController;
   late Animation<double> _arrowAnimation;
 
@@ -39,6 +40,11 @@ class _CategorizedIngredientSuggestionsState
         curve: Curves.easeInOut,
       ),
     );
+
+    // Initialize keys for all categories
+    for (final category in IngredientCategories.all) {
+      _categoryKeys[category.id] = GlobalKey();
+    }
   }
 
   @override
@@ -53,7 +59,8 @@ class _CategorizedIngredientSuggestionsState
       if (_expandedCategories.contains(categoryId)) {
         _expandedCategories.remove(categoryId);
       } else {
-        _expandedCategories.add(categoryId);
+        // Insert at beginning so newest is first
+        _expandedCategories.insert(0, categoryId);
       }
     });
   }
@@ -80,27 +87,19 @@ class _CategorizedIngredientSuggestionsState
               ),
               SizedBox(width: AppSizes.spaceXs),
               // Animated arrow hint
-              AnimatedBuilder(
-                animation: _arrowAnimation,
-                builder: (context, child) {
-                  return Transform.translate(
-                    offset: Offset(0, _arrowAnimation.value),
-                    child: Icon(
-                      Icons.keyboard_double_arrow_down_rounded,
-                      color: colorScheme.primary.withValues(alpha: 0.7),
-                      size: AppSizes.iconSm,
-                    ),
-                  );
-                },
+              Icon(
+                Icons.keyboard_double_arrow_down_rounded,
+                color: colorScheme.primary.withValues(alpha: 0.7),
+                size: AppSizes.iconSm,
               ),
             ],
           ),
         ),
-        SizedBox(height: AppSizes.spaceHeightSm),
+        SizedBox(height: AppSizes.spaceHeightMd),
 
         // Horizontal Scrollable Categories
         SizedBox(
-          height: 95.h,
+          height: 40.h,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingXs),
@@ -117,13 +116,14 @@ class _CategorizedIngredientSuggestionsState
           ),
         ),
 
-        // Expanded Categories with Ingredients
+        // Expanded Categories with Ingredients (newest first order)
         if (_expandedCategories.isNotEmpty) ...[
-          SizedBox(height: AppSizes.spaceHeightMd),
+          SizedBox(height: AppSizes.spaceHeightSm),
           ..._expandedCategories.map((categoryId) {
             final category = IngredientCategories.getById(categoryId);
             if (category == null) return const SizedBox.shrink();
             return _ExpandedCategorySection(
+              key: _categoryKeys[categoryId],
               category: category,
               onClose: () => _toggleCategory(categoryId),
             );
@@ -157,32 +157,21 @@ class _CategoryChip extends StatelessWidget {
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,
         margin: EdgeInsets.only(right: AppSizes.spaceSm),
-        padding: EdgeInsets.symmetric(
-          horizontal: AppSizes.paddingMd,
-          vertical: AppSizes.vPaddingSm,
-        ),
+        padding: AppSizes.paddingAllXs,
         decoration: BoxDecoration(
           color: isExpanded
               ? category.color.withValues(alpha: 0.15)
               : colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+          borderRadius: BorderRadius.circular(AppSizes.radiusXl),
           border: Border.all(
             color: isExpanded
                 ? category.color
                 : colorScheme.outline.withValues(alpha: 0.2),
-            width: isExpanded ? 2 : 1,
+            width: isExpanded ? 1 : 1,
           ),
-          boxShadow: isExpanded
-              ? [
-                  BoxShadow(
-                    color: category.color.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : AppShadows.cardShadow(context),
+          boxShadow: AppShadows.cardShadow(context),
         ),
-        child: Column(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -190,30 +179,31 @@ class _CategoryChip extends StatelessWidget {
             AnimatedScale(
               duration: const Duration(milliseconds: 200),
               scale: isExpanded ? 1.1 : 1.0,
-              child: Text(category.emoji, style: TextStyle(fontSize: 24.sp)),
+              child: Text(category.emoji, style: TextStyle(fontSize: 18.sp)),
             ),
-            SizedBox(height: 4.h),
+            SizedBox(width: AppSizes.spaceXs),
             // Category name
             Text(
               category.name,
               style: textTheme.labelSmall?.copyWith(
                 fontWeight: isExpanded ? FontWeight.w700 : FontWeight.w500,
-                color: isExpanded ? category.color : colorScheme.onSurface,
+                color: colorScheme.onSurface,
                 fontSize: 10.sp,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
+            SizedBox(width: AppSizes.spaceXs),
             // Animated indicator arrow
             AnimatedSize(
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 100),
               child: isExpanded
                   ? Icon(
                       Icons.keyboard_arrow_up_rounded,
                       color: category.color,
-                      size: 14.sp,
+                      size: AppSizes.iconSm,
                     )
-                  : SizedBox(height: 0.h),
+                  : SizedBox(width: 0.w),
             ),
           ],
         ),
@@ -228,6 +218,7 @@ class _ExpandedCategorySection extends StatefulWidget {
   final VoidCallback onClose;
 
   const _ExpandedCategorySection({
+    super.key,
     required this.category,
     required this.onClose,
   });
@@ -271,27 +262,37 @@ class _ExpandedCategorySectionState extends State<_ExpandedCategorySection>
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final provider = context.read<IngredientsProvider>();
+    final provider = context.watch<IngredientsProvider>();
+
+    // Sort ingredients: selected ones first, in selection order
+    final sortedIngredients = [...widget.category.ingredients];
+    final ingredientNames = provider.currentIngredients
+        .map((i) => i.name.toLowerCase())
+        .toList();
+
+    sortedIngredients.sort((a, b) {
+      final aSelected = provider.hasIngredientByName(a);
+      final bSelected = provider.hasIngredientByName(b);
+
+      if (aSelected && bSelected) {
+        // Both selected: sort by selection order (index in currentIngredients)
+        final aIndex = ingredientNames.indexOf(a.toLowerCase());
+        final bIndex = ingredientNames.indexOf(b.toLowerCase());
+        return aIndex.compareTo(bIndex);
+      }
+      if (aSelected && !bSelected) return -1;
+      if (!aSelected && bSelected) return 1;
+      return 0;
+    });
 
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(
         position: _slideAnimation,
         child: Container(
-          margin: EdgeInsets.only(
-            bottom: AppSizes.vMarginMd,
-            left: AppSizes.marginXs,
-            right: AppSizes.marginXs,
-          ),
-          padding: AppSizes.paddingAllMd,
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-            border: Border.all(
-              color: widget.category.color.withValues(alpha: 0.3),
-              width: 1.5,
-            ),
-            boxShadow: AppShadows.cardShadow(context),
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSizes.paddingSm,
+            vertical: AppSizes.vPaddingSm,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,13 +302,13 @@ class _ExpandedCategorySectionState extends State<_ExpandedCategorySection>
                 children: [
                   Text(
                     widget.category.emoji,
-                    style: TextStyle(fontSize: 20.sp),
+                    style: TextStyle(fontSize: 18.sp),
                   ),
                   SizedBox(width: AppSizes.spaceXs),
                   Expanded(
                     child: Text(
                       widget.category.name,
-                      style: textTheme.titleSmall?.copyWith(
+                      style: textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: widget.category.color,
                       ),
@@ -325,7 +326,7 @@ class _ExpandedCategorySectionState extends State<_ExpandedCategorySection>
                       child: Icon(
                         Icons.close_rounded,
                         size: AppSizes.iconXs,
-                        color: colorScheme.onSurfaceVariant,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -334,16 +335,21 @@ class _ExpandedCategorySectionState extends State<_ExpandedCategorySection>
               SizedBox(height: AppSizes.spaceHeightSm),
               // Ingredient chips wrap
               Wrap(
-                spacing: 8.w,
-                runSpacing: 8.h,
-                children: widget.category.ingredients.map((ingredient) {
+                spacing: 6.w,
+                runSpacing: 6.h,
+                children: sortedIngredients.map((ingredient) {
+                  final isSelected = provider.hasIngredientByName(ingredient);
                   return _IngredientChip(
                     label: ingredient,
                     categoryColor: widget.category.color,
+                    isSelected: isSelected,
                     onTap: () {
                       HapticFeedback.selectionClick();
-                      provider.addCustomIngredient(ingredient, 1, 'unit');
-                      CustomSnackBar.showSuccess(context, '$ingredient added');
+                      if (isSelected) {
+                        provider.removeIngredientByName(ingredient);
+                      } else {
+                        provider.addCustomIngredient(ingredient, 1, 'unit');
+                      }
                     },
                   );
                 }).toList(),
@@ -356,16 +362,18 @@ class _ExpandedCategorySectionState extends State<_ExpandedCategorySection>
   }
 }
 
-/// Individual ingredient chip with add icon
+/// Individual ingredient chip with add/check icon
 class _IngredientChip extends StatelessWidget {
   final String label;
   final Color categoryColor;
+  final bool isSelected;
   final VoidCallback onTap;
 
   const _IngredientChip({
     required this.label,
     required this.categoryColor,
     required this.onTap,
+    this.isSelected = false,
   });
 
   @override
@@ -380,27 +388,39 @@ class _IngredientChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
         splashColor: categoryColor.withValues(alpha: 0.2),
         highlightColor: categoryColor.withValues(alpha: 0.1),
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
           decoration: BoxDecoration(
-            color: categoryColor.withValues(alpha: 0.08),
+            color: isSelected
+                ? categoryColor.withValues(alpha: 0.2)
+                : categoryColor.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-            border: Border.all(color: categoryColor.withValues(alpha: 0.25)),
+            border: Border.all(
+              color: isSelected
+                  ? categoryColor
+                  : categoryColor.withValues(alpha: 0.25),
+              width: 1,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.add_rounded,
-                color: categoryColor,
-                size: AppSizes.iconXs,
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Icon(
+                  isSelected ? Icons.check_rounded : Icons.add_rounded,
+                  key: ValueKey(isSelected),
+                  color: categoryColor,
+                  size: AppSizes.iconXs,
+                ),
               ),
               SizedBox(width: 4.w),
               Text(
                 label,
                 style: textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
             ],
