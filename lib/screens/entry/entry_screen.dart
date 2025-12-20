@@ -1,5 +1,6 @@
 import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
+import 'package:ai_ruchi/shared/widgets/ingredient/categorized_ingredient_suggestions.dart';
 import 'package:ai_ruchi/core/utils/ingredient_helper.dart';
 import 'package:ai_ruchi/providers/ingredients_provider.dart';
 import 'package:ai_ruchi/providers/recipe_provider.dart';
@@ -184,66 +185,85 @@ class _EntryScreenState extends State<EntryScreen>
   }
 
   Widget _buildEmptyState(ColorScheme colorScheme, TextTheme textTheme) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(AppSizes.paddingXl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 70.w,
-              height: 70.h,
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.add_shopping_cart_outlined,
-                size: 30.sp,
-                color: colorScheme.primary.withValues(alpha: 0.7),
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(vertical: AppSizes.vPaddingMd),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Categorized Ingredient Suggestions
+          const CategorizedIngredientSuggestions(),
+          SizedBox(height: AppSizes.spaceHeightXl),
+
+          // Empty State Message
+          Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingXl),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 70.w,
+                    height: 70.h,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer.withValues(
+                        alpha: 0.3,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.add_shopping_cart_outlined,
+                      size: 30.sp,
+                      color: colorScheme.primary.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  SizedBox(height: AppSizes.spaceHeightLg),
+                  Text(
+                    'No Ingredients Yet',
+                    style: textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  SizedBox(height: AppSizes.spaceHeightSm),
+                  Text(
+                    'Start by adding ingredients you have in your kitchen. Our AI will suggest delicious recipes!',
+                    textAlign: TextAlign.center,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.5,
+                    ),
+                  ),
+                  SizedBox(height: AppSizes.spaceHeightXl),
+                  // Quick add suggestions
+                  Wrap(
+                    spacing: AppSizes.spaceSm,
+                    runSpacing: AppSizes.spaceHeightSm,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _QuickAddChip(
+                        label: '🥚 Eggs',
+                        onTap: () => _quickAdd('eggs'),
+                      ),
+                      _QuickAddChip(
+                        label: '🍗 Chicken',
+                        onTap: () => _quickAdd('chicken'),
+                      ),
+                      _QuickAddChip(
+                        label: '🍅 Tomatoes',
+                        onTap: () => _quickAdd('tomatoes'),
+                      ),
+                      _QuickAddChip(
+                        label: '🧅 Onions',
+                        onTap: () => _quickAdd('onions'),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            SizedBox(height: AppSizes.spaceHeightLg),
-            Text(
-              'No Ingredients Yet',
-              style: textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            SizedBox(height: AppSizes.spaceHeightSm),
-            Text(
-              'Start by adding ingredients you have in your kitchen. Our AI will suggest delicious recipes!',
-              textAlign: TextAlign.center,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                height: 1.5,
-              ),
-            ),
-            SizedBox(height: AppSizes.spaceHeightXl),
-            // Quick add suggestions
-            Wrap(
-              spacing: AppSizes.spaceSm,
-              runSpacing: AppSizes.spaceHeightSm,
-              alignment: WrapAlignment.center,
-              children: [
-                _QuickAddChip(label: '🥚 Eggs', onTap: () => _quickAdd('eggs')),
-                _QuickAddChip(
-                  label: '🍗 Chicken',
-                  onTap: () => _quickAdd('chicken'),
-                ),
-                _QuickAddChip(
-                  label: '🍅 Tomatoes',
-                  onTap: () => _quickAdd('tomatoes'),
-                ),
-                _QuickAddChip(
-                  label: '🧅 Onions',
-                  onTap: () => _quickAdd('onions'),
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+          SizedBox(height: AppSizes.spaceHeightXl),
+        ],
       ),
     );
   }
