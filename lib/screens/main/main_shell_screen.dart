@@ -16,6 +16,7 @@ class MainShellScreen extends StatefulWidget {
 
 class _MainShellScreenState extends State<MainShellScreen> {
   int _currentIndex = 0;
+  bool _isTapNavigation = false;
   late PageController _pageController;
 
   final List<Widget> _screens = [
@@ -38,7 +39,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   void _onNavTap(int index) {
-    HapticFeedback.selectionClick();
+    _isTapNavigation = true;
     setState(() {
       _currentIndex = index;
     });
@@ -47,7 +48,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   void _onPageChanged(int index) {
-    // Only update state, haptic is handled in _onNavTap
+    if (_isTapNavigation) {
+      _isTapNavigation = false;
+    } else {
+      HapticFeedback.lightImpact();
+    }
     setState(() {
       _currentIndex = index;
     });
@@ -87,6 +92,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ),
         bottomNavigationBar: AppBottomNavigationBar(
           currentIndex: _currentIndex,
+          pageController: _pageController, // Enables swipe-progress animations
           onTap: _onNavTap,
         ),
       ),
