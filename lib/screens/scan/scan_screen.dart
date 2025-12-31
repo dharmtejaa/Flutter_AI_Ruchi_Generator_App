@@ -19,8 +19,7 @@ class ScanScreen extends StatefulWidget {
   State<ScanScreen> createState() => _ScanScreenState();
 }
 
-class _ScanScreenState extends State<ScanScreen>
-    with SingleTickerProviderStateMixin {
+class _ScanScreenState extends State<ScanScreen> {
   final ImagePicker _picker = ImagePicker();
 
   File? _selectedImage;
@@ -31,32 +30,6 @@ class _ScanScreenState extends State<ScanScreen>
   String _loadingMessage = 'Generating Recipe...';
   String? _errorMessage;
   bool _showError = false;
-
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _slideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
-    _slideAnimation = Tween<double>(begin: 30.0, end: 0.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
-    _animationController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -199,48 +172,36 @@ class _ScanScreenState extends State<ScanScreen>
     final textTheme = Theme.of(context).textTheme;
 
     return SafeArea(
-      child: AnimatedBuilder(
-        animation: _animationController,
-        builder: (context, child) {
-          return Opacity(
-            opacity: _fadeAnimation.value,
-            child: Transform.translate(
-              offset: Offset(0, _slideAnimation.value),
-              child: child,
-            ),
-          );
-        },
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingMd),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: AppSizes.spaceHeightMd),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingMd),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: AppSizes.spaceHeightMd),
 
-                // Header
-                _buildHeader(textTheme, colorScheme),
-                SizedBox(height: AppSizes.spaceHeightLg),
+              // Header
+              _buildHeader(textTheme, colorScheme),
+              SizedBox(height: AppSizes.spaceHeightLg),
 
-                // Image Picker Section
-                _buildImagePicker(colorScheme, textTheme),
-                SizedBox(height: AppSizes.spaceHeightLg),
+              // Image Picker Section
+              _buildImagePicker(colorScheme, textTheme),
+              SizedBox(height: AppSizes.spaceHeightLg),
 
-                // Error State with Retry and Demo buttons
-                if (_showError && _errorMessage != null)
-                  _buildErrorSection(colorScheme, textTheme),
+              // Error State with Retry and Demo buttons
+              if (_showError && _errorMessage != null)
+                _buildErrorSection(colorScheme, textTheme),
 
-                // Extracted Ingredients (if available)
-                if (_extractedIngredients != null &&
-                    _extractedIngredients!.isNotEmpty)
-                  _buildExtractedIngredients(colorScheme, textTheme),
+              // Extracted Ingredients (if available)
+              if (_extractedIngredients != null &&
+                  _extractedIngredients!.isNotEmpty)
+                _buildExtractedIngredients(colorScheme, textTheme),
 
-                // Generate Button
-                _buildGenerateButton(colorScheme, textTheme),
-                SizedBox(height: AppSizes.spaceHeightXl),
-              ],
-            ),
+              // Generate Button
+              _buildGenerateButton(colorScheme, textTheme),
+              SizedBox(height: AppSizes.spaceHeightXl),
+            ],
           ),
         ),
       ),

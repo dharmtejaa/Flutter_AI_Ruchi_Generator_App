@@ -16,6 +16,7 @@ class MainShellScreen extends StatefulWidget {
 
 class _MainShellScreenState extends State<MainShellScreen> {
   int _currentIndex = 0;
+  late PageController _pageController;
 
   final List<Widget> _screens = [
     const EntryScreen(),
@@ -24,8 +25,29 @@ class _MainShellScreenState extends State<MainShellScreen> {
     const ProfileScreen(),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _currentIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   void _onNavTap(int index) {
     HapticFeedback.selectionClick();
+    setState(() {
+      _currentIndex = index;
+    });
+    // Use jumpToPage for instant navigation without animation lag
+    _pageController.jumpToPage(index);
+  }
+
+  void _onPageChanged(int index) {
+    // Only update state, haptic is handled in _onNavTap
     setState(() {
       _currentIndex = index;
     });
@@ -57,7 +79,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
     return DoubleBackToExit(
       child: Scaffold(
-        body: IndexedStack(index: _currentIndex, children: _screens),
+        body: PageView(
+          controller: _pageController,
+          onPageChanged: _onPageChanged,
+          physics: const BouncingScrollPhysics(),
+          children: _screens,
+        ),
         bottomNavigationBar: AppBottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: _onNavTap,

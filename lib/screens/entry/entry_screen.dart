@@ -5,8 +5,8 @@ import 'package:ai_ruchi/core/utils/ingredient_helper.dart';
 import 'package:ai_ruchi/providers/ingredients_provider.dart';
 import 'package:ai_ruchi/providers/recipe_provider.dart';
 import 'package:ai_ruchi/shared/widgets/common/dismiss_keyboard.dart';
+import 'package:ai_ruchi/shared/widgets/recipe/recipe_preferences_bottom_sheet.dart';
 import 'package:ai_ruchi/shared/widgets/ingredient/current_ingredients_section.dart';
-import 'package:ai_ruchi/shared/widgets/ingredient/ingredient_action_bar.dart';
 import 'package:ai_ruchi/shared/widgets/ingredient/ingredient_header_widget.dart';
 import 'package:ai_ruchi/shared/widgets/ingredient/ingredient_input_widget.dart';
 
@@ -28,10 +28,25 @@ class _EntryScreenState extends State<EntryScreen>
   final FocusNode _ingredientFocusNode = FocusNode();
   late AnimationController _headerAnimationController;
   late Animation<double> _headerAnimation;
+  late AnimationController _fabAnimationController;
+  late Animation<double> _fabRotationAnimation;
+  late Animation<double> _fabScaleAnimation;
 
   @override
   void initState() {
     super.initState();
+
+    // FAB animation setup
+    _fabAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fabRotationAnimation = Tween<double>(begin: 0.0, end: 0.125).animate(
+      CurvedAnimation(parent: _fabAnimationController, curve: Curves.easeInOut),
+    );
+    _fabScaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _fabAnimationController, curve: Curves.easeInOut),
+    );
     _headerAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -48,6 +63,7 @@ class _EntryScreenState extends State<EntryScreen>
     _ingredientController.dispose();
     _ingredientFocusNode.dispose();
     _headerAnimationController.dispose();
+    _fabAnimationController.dispose();
     super.dispose();
   }
 
@@ -67,6 +83,20 @@ class _EntryScreenState extends State<EntryScreen>
     context.push('/loading');
   }
 
+  void _showRecipePreferencesSheet(BuildContext context) {
+    _fabAnimationController.forward();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) =>
+          RecipePreferencesBottomSheet(onGenerateRecipe: _handleGenerateRecipe),
+    ).whenComplete(() {
+      _fabAnimationController.reverse();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -77,79 +107,110 @@ class _EntryScreenState extends State<EntryScreen>
         final hasIngredients =
             ingredientsProvider.currentIngredients.isNotEmpty;
 
-        return DismissKeyboard(
-          child: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Animated Header Section
-                FadeTransition(
-                  opacity: _headerAnimation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, -0.2),
-                      end: Offset.zero,
-                    ).animate(_headerAnimation),
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppSizes.paddingMd,
-                        vertical: AppSizes.vPaddingMd,
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          floatingActionButton: hasIngredients
+              ? AnimatedBuilder(
+                  animation: _fabAnimationController,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: _fabScaleAnimation.value,
+                      child: Transform.rotate(
+                        angle: _fabRotationAnimation.value * 2 * 3.14159,
+                        child: child,
                       ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        boxShadow: AppShadows.elevatedShadow(context),
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(AppSizes.radiusXxxl),
-                          bottomRight: Radius.circular(AppSizes.radiusXxxl),
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [colorScheme.primary, colorScheme.secondary],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colorScheme.primary.withValues(alpha: 0.4),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
                         ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Title
-                          const IngredientHeaderWidget(
-                            title: 'What\'s in your kitchen?',
-                          ),
-                          SizedBox(height: AppSizes.spaceHeightSm),
-
-                          // Add Ingredient Input
-                          IngredientInputWidget(
-                            controller: _ingredientController,
-                            onAdd: _handleAddIngredient,
-                            focusNode: _ingredientFocusNode,
-                            hintText:
-                                'Type an ingredient (e.g., 2 eggs, chicken...)',
-                          ),
-                        ],
+                      ],
+                    ),
+                    child: FloatingActionButton(
+                      onPressed: () => _showRecipePreferencesSheet(context),
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      highlightElevation: 0,
+                      child: Icon(
+                        Icons.auto_awesome,
+                        color: colorScheme.onPrimary,
+                        size: AppSizes.iconMd,
                       ),
                     ),
                   ),
-                ),
+                )
+              : null,
+          body: DismissKeyboard(
+            child: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Animated Header Section
+                  FadeTransition(
+                    opacity: _headerAnimation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, -0.2),
+                        end: Offset.zero,
+                      ).animate(_headerAnimation),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSizes.paddingMd,
+                          vertical: AppSizes.vPaddingSm,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surface,
+                          boxShadow: AppShadows.elevatedShadow(context),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(AppSizes.radiusXxxl),
+                            bottomRight: Radius.circular(AppSizes.radiusXxxl),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Title
+                            const IngredientHeaderWidget(
+                              title: 'What\'s in your kitchen?',
+                            ),
+                            SizedBox(height: AppSizes.spaceHeightXs),
 
-                // Content Section
-                Expanded(
-                  child: hasIngredients
-                      ? _buildIngredientsContent(
-                          ingredientsProvider,
-                          colorScheme,
-                          textTheme,
-                        )
-                      : _buildEmptyState(colorScheme, textTheme),
-                ),
-
-                // Bottom Action Bar
-                if (hasIngredients)
-                  IngredientActionBar(
-                    primaryActionText: 'Generate Recipe',
-                    primaryActionIcon: Icons.auto_awesome,
-                    onPrimaryAction: _handleGenerateRecipe,
-                    secondaryActionText: 'Nutrition Info',
-                    secondaryActionIcon: Icons.health_and_safety_outlined,
-                    onSecondaryAction: () {
-                      context.push('/nutrition-info');
-                    },
+                            // Add Ingredient Input
+                            IngredientInputWidget(
+                              controller: _ingredientController,
+                              onAdd: _handleAddIngredient,
+                              focusNode: _ingredientFocusNode,
+                              hintText: 'e.g., 2 eggs, chicken',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-              ],
+
+                  // Content Section
+                  Expanded(
+                    child: hasIngredients
+                        ? _buildIngredientsContent(
+                            ingredientsProvider,
+                            colorScheme,
+                            textTheme,
+                          )
+                        : _buildEmptyState(colorScheme, textTheme),
+                  ),
+                ],
+              ),
             ),
           ),
         );
