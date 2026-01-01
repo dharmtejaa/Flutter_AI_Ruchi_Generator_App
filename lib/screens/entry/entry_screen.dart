@@ -79,6 +79,7 @@ class _EntryScreenState extends State<EntryScreen>
     );
   }
 
+ 
   Future<void> _handleGenerateRecipe() async {
     context.push('/loading');
   }

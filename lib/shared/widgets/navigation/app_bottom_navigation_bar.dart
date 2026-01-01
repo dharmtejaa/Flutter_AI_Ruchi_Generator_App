@@ -370,7 +370,7 @@ class _AnimatedNavItemWidget extends StatelessWidget {
           activeness,
         )!;
 
-        final activeIconColor = colorScheme.onSurfaceVariant;
+        final activeIconColor = colorScheme.primary;
         final inactiveIconColor = LightThemeColors.mediumGray;
         final iconColor = Color.lerp(
           inactiveIconColor,

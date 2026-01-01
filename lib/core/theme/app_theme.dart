@@ -67,7 +67,7 @@ class AppTheme {
       onSurfaceVariant: LightThemeColors.softGrey,
       tertiary: LightThemeColors.mediumGray,
       error: LightThemeColors.errorRed,
-      onError: Colors.white,
+      onError: Color(0xFFFFFEFF),
       outline: LightThemeColors.primaryBorder,
       outlineVariant: LightThemeColors.secondaryBorder,
       shadow: LightThemeColors.shadowLight,
