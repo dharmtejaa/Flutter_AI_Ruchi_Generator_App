@@ -29,6 +29,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
   final GlobalKey<ScanScreenState> _scanScreenKey =
       GlobalKey<ScanScreenState>();
 
+  // ============================================================================
+  // BOTTOM NAVIGATION GLOBAL KEYS (for tutorial targeting)
+  // ============================================================================
+  final GlobalKey _recipesNavKey = GlobalKey();
+  final GlobalKey _scanNavKey = GlobalKey();
+
   /// Screens list - using keys for Entry and Scan screens
   late final List<Widget> _screens;
 
@@ -38,9 +44,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
     _pageController = PageController(initialPage: _currentIndex);
 
     // Initialize screens with GlobalKeys for Entry and Scan screens
+    // Also pass nav keys for tutorial targeting
     _screens = [
-      EntryScreen(key: _entryScreenKey),
-      ScanScreen(key: _scanScreenKey),
+      EntryScreen(key: _entryScreenKey, recipesNavKey: _recipesNavKey),
+      ScanScreen(key: _scanScreenKey, scanNavKey: _scanNavKey),
       const SavedRecipesScreen(),
       const ProfileScreen(),
     ];
@@ -166,8 +173,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
               pageController: _pageController,
               onTap: _onNavTap,
               onReTap: _onNavReTap,
-              hasIngredients:
-                  hasIngredients, // Show Generate icon when ingredients exist
+              hasIngredients: hasIngredients,
+              recipesNavKey: _recipesNavKey,
+              scanNavKey: _scanNavKey,
             );
           },
         ),

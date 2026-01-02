@@ -1,3 +1,4 @@
+import 'package:ai_ruchi/core/services/tutorial_service.dart';
 import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/core/utils/recipe_helper.dart';
@@ -24,6 +25,18 @@ class RecipeGeneratedScreen extends StatefulWidget {
 class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _tutorialChecked = false;
+
+  // ============================================================================
+  // TUTORIAL GLOBAL KEYS
+  // ============================================================================
+  final GlobalKey _recipeImageKey = GlobalKey();
+  final GlobalKey _infoBadgesKey = GlobalKey();
+  final GlobalKey _ingredientsTabKey = GlobalKey();
+  final GlobalKey _stepsTabKey = GlobalKey();
+  final GlobalKey _nutritionTabKey = GlobalKey();
+  final GlobalKey _saveButtonKey = GlobalKey();
+  final GlobalKey _regenerateButtonKey = GlobalKey();
 
   @override
   void initState() {
@@ -37,11 +50,41 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
     super.dispose();
   }
 
+  /// Check and show tutorial when screen is first visited
+  void _checkAndShowTutorial() {
+    if (_tutorialChecked) return;
+    _tutorialChecked = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final isShown = await TutorialService.isRecipeTutorialShown();
+      if (!isShown && mounted) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (mounted) {
+          TutorialService.showRecipeTutorial(
+            context: context,
+            recipeImageKey: _recipeImageKey,
+            infoBadgesKey: _infoBadgesKey,
+            ingredientsTabKey: _ingredientsTabKey,
+            stepsTabKey: _stepsTabKey,
+            nutritionTabKey: _nutritionTabKey,
+            saveButtonKey: _saveButtonKey,
+            regenerateButtonKey: _regenerateButtonKey,
+          );
+        }
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     final recipe = context.watch<RecipeProvider>().recipe;
+
+    // Check for tutorial after recipe is available
+    if (recipe != null) {
+      _checkAndShowTutorial();
+    }
 
     if (recipe == null) {
       return Scaffold(
@@ -99,6 +142,7 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
                   builder: (context, savedProvider, child) {
                     final isSaved = savedProvider.isRecipeSaved(recipe.title);
                     return IconButton(
+                      key: _saveButtonKey,
                       icon: Icon(
                         isSaved ? Icons.bookmark : Icons.bookmark_border,
                         color: isSaved
@@ -127,22 +171,25 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
               ],
             ),
 
-            // Recipe Image
+            // Recipe Image with Tutorial Key
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.only(
                   top: AppSizes.spaceHeightSm,
                   bottom: AppSizes.spaceHeightMd,
                 ),
-                child: RecipeImageWidget(
-                  height: 230.h,
-                  imageUrl: recipe.imageUrl,
-                  recipeName: recipe.title,
+                child: Container(
+                  key: _recipeImageKey,
+                  child: RecipeImageWidget(
+                    height: 230.h,
+                    imageUrl: recipe.imageUrl,
+                    recipeName: recipe.title,
+                  ),
                 ),
               ),
             ),
 
-            // Recipe info badges
+            // Recipe info badges with Tutorial Key
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingMd),
@@ -158,35 +205,38 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
                     ),
                     SizedBox(height: AppSizes.spaceHeightMd),
                     // Info badges
-                    Wrap(
-                      spacing: AppSizes.spaceSm,
-                      runSpacing: AppSizes.spaceHeightSm,
-                      children: [
-                        _InfoBadge(
-                          icon: Icons.timer_outlined,
-                          label: recipe.prepTime,
-                          subtitle: 'Prep',
-                          color: const Color(0xFF4ECDC4),
-                        ),
-                        _InfoBadge(
-                          icon: Icons.local_fire_department,
-                          label: recipe.cookTime,
-                          subtitle: 'Cook',
-                          color: const Color(0xFFFF6B35),
-                        ),
-                        _InfoBadge(
-                          icon: Icons.people_outline,
-                          label: recipe.servings,
-                          subtitle: 'Servings',
-                          color: const Color(0xFF45B7D1),
-                        ),
-                        _InfoBadge(
-                          icon: Icons.signal_cellular_alt,
-                          label: recipe.difficulty,
-                          subtitle: 'Level',
-                          color: const Color(0xFF9B59B6),
-                        ),
-                      ],
+                    Container(
+                      key: _infoBadgesKey,
+                      child: Wrap(
+                        spacing: AppSizes.spaceSm,
+                        runSpacing: AppSizes.spaceHeightSm,
+                        children: [
+                          _InfoBadge(
+                            icon: Icons.timer_outlined,
+                            label: recipe.prepTime,
+                            subtitle: 'Prep',
+                            color: const Color(0xFF4ECDC4),
+                          ),
+                          _InfoBadge(
+                            icon: Icons.local_fire_department,
+                            label: recipe.cookTime,
+                            subtitle: 'Cook',
+                            color: const Color(0xFFFF6B35),
+                          ),
+                          _InfoBadge(
+                            icon: Icons.people_outline,
+                            label: recipe.servings,
+                            subtitle: 'Servings',
+                            color: const Color(0xFF45B7D1),
+                          ),
+                          _InfoBadge(
+                            icon: Icons.signal_cellular_alt,
+                            label: recipe.difficulty,
+                            subtitle: 'Level',
+                            color: const Color(0xFF9B59B6),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -205,7 +255,7 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
               ),
             ),
 
-            // Sticky Tab Bar
+            // Sticky Tab Bar with Tutorial Keys
             SliverPersistentHeader(
               pinned: true,
               delegate: _StickyTabBarDelegate(
@@ -222,6 +272,7 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
                   unselectedLabelStyle: textTheme.titleSmall,
                   tabs: [
                     Tab(
+                      key: _ingredientsTabKey,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -232,6 +283,7 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
                       ),
                     ),
                     Tab(
+                      key: _stepsTabKey,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -242,6 +294,7 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
                       ),
                     ),
                     Tab(
+                      key: _nutritionTabKey,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -280,6 +333,7 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        key: _regenerateButtonKey,
         onPressed: () => _handleRegenerate(context),
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
@@ -352,11 +406,15 @@ class _InfoBadge extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: textTheme.titleSmall?.copyWith(fontWeight: .bold),
+                style: textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               Text(
                 subtitle,
-                style: textTheme.labelSmall?.copyWith(fontWeight: .bold),
+                style: textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),

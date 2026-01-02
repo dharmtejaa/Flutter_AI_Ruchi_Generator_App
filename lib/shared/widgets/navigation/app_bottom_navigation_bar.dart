@@ -11,14 +11,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// Animation configuration constants - easily adjustable
 class _NavConstants {
   // Sizes
-  static double get selectedSize => 60.w;
-  static double get unselectedSize => 46.w;
-  static double get spacing => 16.w;
-  static double get containerHeight => 74.h;
+  static double get selectedSize => 65.w;
+  static double get unselectedSize => 50.w;
+  static double get spacing => 18.w;
+  static double get containerHeight => 75.h;
 
   // Icon sizes
   static double get activeIconSize => 28.sp;
-  static double get inactiveIconSize => 22.sp;
+  static double get inactiveIconSize => 24.sp;
 
   // Animation
   static const Duration scrollDuration = Duration(milliseconds: 250);
@@ -46,6 +46,12 @@ class AppBottomNavigationBar extends StatefulWidget {
   /// When false, shows regular recipe icon (restaurant_menu)
   final bool hasIngredients;
 
+  /// GlobalKey for the Recipes/Generate nav item (for tutorial targeting)
+  final GlobalKey? recipesNavKey;
+
+  /// GlobalKey for the Scan nav item (for tutorial targeting)
+  final GlobalKey? scanNavKey;
+
   const AppBottomNavigationBar({
     super.key,
     this.currentIndex = 0,
@@ -53,6 +59,8 @@ class AppBottomNavigationBar extends StatefulWidget {
     this.onReTap,
     this.pageController,
     this.hasIngredients = false,
+    this.recipesNavKey,
+    this.scanNavKey,
   });
 
   @override
@@ -310,14 +318,27 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
                 itemBuilder: (context, index) {
                   final item = _items[index];
 
+                  // Determine the GlobalKey for this item
+                  GlobalKey? itemKey;
+                  if (index == 0) {
+                    itemKey = widget.recipesNavKey;
+                  } else if (index == 1) {
+                    itemKey = widget.scanNavKey;
+                  }
+
+                  final navWidget = _AnimatedNavItemWidget(
+                    item: item,
+                    index: index,
+                    pageNotifier: _pageNotifier,
+                    colorScheme: colorScheme,
+                    onTap: () => _onItemTap(index),
+                  );
+
+                  // Wrap with keyed container if key is provided
                   return Center(
-                    child: _AnimatedNavItemWidget(
-                      item: item,
-                      index: index,
-                      pageNotifier: _pageNotifier,
-                      colorScheme: colorScheme,
-                      onTap: () => _onItemTap(index),
-                    ),
+                    child: itemKey != null
+                        ? Container(key: itemKey, child: navWidget)
+                        : navWidget,
                   );
                 },
               ),

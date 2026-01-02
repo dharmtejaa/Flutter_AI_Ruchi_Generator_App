@@ -1,5 +1,7 @@
+import 'package:ai_ruchi/core/services/tutorial_service.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/providers/theme_provider.dart';
+import 'package:ai_ruchi/shared/widgets/common/custom_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -164,6 +166,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildSettingsCard(
                 context,
                 children: [
+                  _buildSettingsTile(
+                    context,
+                    icon: Icons.play_circle_outline,
+                    title: 'Replay Tutorial',
+                    onTap: () => _showReplayTutorialDialog(context),
+                  ),
+                  _buildDivider(context),
                   _buildSettingsTile(
                     context,
                     icon: Icons.help_outline,
@@ -448,6 +457,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // TODO: Implement logout logic
             },
             child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showReplayTutorialDialog(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.play_circle_outline,
+              color: colorScheme.primary,
+              size: 28.sp,
+            ),
+            SizedBox(width: 12.w),
+            Text('Replay Tutorial', style: textTheme.titleLarge),
+          ],
+        ),
+        content: Text(
+          'Would you like to replay the app tutorial? This will reset all tutorial progress and show the guides again on each screen.',
+          style: textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await TutorialService.resetAllTutorials();
+              if (context.mounted) {
+                CustomSnackBar.showSuccess(
+                  context,
+                  'Tutorial reset! Navigate to Home to start.',
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              ),
+            ),
+            child: const Text('Reset & Replay'),
           ),
         ],
       ),

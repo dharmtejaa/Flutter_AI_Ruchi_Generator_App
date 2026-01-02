@@ -1,3 +1,4 @@
+import 'package:ai_ruchi/core/services/tutorial_service.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/providers/recipe_provider.dart';
 import 'package:ai_ruchi/shared/widgets/common/custom_button.dart';
@@ -6,13 +7,56 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-class RecipePreferencesBottomSheet extends StatelessWidget {
+class RecipePreferencesBottomSheet extends StatefulWidget {
   final VoidCallback onGenerateRecipe;
 
   const RecipePreferencesBottomSheet({
     super.key,
     required this.onGenerateRecipe,
   });
+
+  @override
+  State<RecipePreferencesBottomSheet> createState() =>
+      _RecipePreferencesBottomSheetState();
+}
+
+class _RecipePreferencesBottomSheetState
+    extends State<RecipePreferencesBottomSheet> {
+  // ============================================================================
+  // TUTORIAL GLOBAL KEYS
+  // ============================================================================
+  final GlobalKey _aiModelKey = GlobalKey();
+  final GlobalKey _cuisineKey = GlobalKey();
+  final GlobalKey _dietaryKey = GlobalKey();
+  final GlobalKey _nutritionButtonKey = GlobalKey();
+  final GlobalKey _generateButtonKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    // Check and show tutorial after the sheet is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndShowTutorial();
+    });
+  }
+
+  /// Check and show preferences tutorial
+  Future<void> _checkAndShowTutorial() async {
+    final isShown = await TutorialService.isPreferencesTutorialShown();
+    if (!isShown && mounted) {
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (mounted) {
+        TutorialService.showPreferencesTutorial(
+          context: context,
+          aiModelKey: _aiModelKey,
+          cuisineKey: _cuisineKey,
+          dietaryKey: _dietaryKey,
+          nutritionButtonKey: _nutritionButtonKey,
+          generateButtonKey: _generateButtonKey,
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,51 +122,78 @@ class RecipePreferencesBottomSheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // AI Model Selection
-                      _buildSectionHeader(
-                        context,
-                        'AI Model',
-                        Icons.psychology_rounded,
-                      ),
-                      SizedBox(height: AppSizes.spaceHeightXs),
-                      Wrap(
-                        spacing: 6.w,
-                        runSpacing: 6.h,
-                        children: RecipeProvider.providers.map((provider) {
-                          final isSelected =
-                              recipeProvider.selectedProvider == provider;
-                          return _PreferenceChip(
-                            label: provider.toUpperCase(),
-                            isSelected: isSelected,
-                            onTap: () => recipeProvider.setProvider(provider),
-                            icon: provider == 'openai'
-                                ? Icons.auto_awesome
-                                : Icons.diamond_outlined,
-                          );
-                        }).toList(),
+                      // AI Model Selection with Tutorial Key
+                      Container(
+                        key: _aiModelKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionHeader(
+                              context,
+                              'AI Model',
+                              Icons.psychology_rounded,
+                            ),
+                            SizedBox(height: AppSizes.spaceHeightXs),
+                            Wrap(
+                              spacing: 6.w,
+                              runSpacing: 6.h,
+                              children: RecipeProvider.providers.map((
+                                provider,
+                              ) {
+                                final isSelected =
+                                    recipeProvider.selectedProvider == provider;
+                                return _PreferenceChip(
+                                  label: provider.toUpperCase(),
+                                  isSelected: isSelected,
+                                  onTap: () =>
+                                      recipeProvider.setProvider(provider),
+                                  icon: provider == 'openai'
+                                      ? Icons.auto_awesome
+                                      : Icons.diamond_outlined,
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
                       ),
 
                       SizedBox(height: AppSizes.spaceHeightMd),
 
-                      // Cuisine Type Selection
-                      _buildSectionHeader(
-                        context,
-                        'Cuisine Type',
-                        Icons.restaurant_menu_rounded,
+                      // Cuisine Type Selection with Tutorial Key
+                      Container(
+                        key: _cuisineKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionHeader(
+                              context,
+                              'Cuisine Type',
+                              Icons.restaurant_menu_rounded,
+                            ),
+                            SizedBox(height: AppSizes.spaceHeightXs),
+                            _buildCuisineChips(context, recipeProvider),
+                          ],
+                        ),
                       ),
-                      SizedBox(height: AppSizes.spaceHeightXs),
-                      _buildCuisineChips(context, recipeProvider),
 
                       SizedBox(height: AppSizes.spaceHeightMd),
 
-                      // Dietary Preference Selection
-                      _buildSectionHeader(
-                        context,
-                        'Dietary Preference',
-                        Icons.eco_rounded,
+                      // Dietary Preference Selection with Tutorial Key
+                      Container(
+                        key: _dietaryKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionHeader(
+                              context,
+                              'Dietary Preference',
+                              Icons.eco_rounded,
+                            ),
+                            SizedBox(height: AppSizes.spaceHeightXs),
+                            _buildDietaryChips(context, recipeProvider),
+                          ],
+                        ),
                       ),
-                      SizedBox(height: AppSizes.spaceHeightXs),
-                      _buildDietaryChips(context, recipeProvider),
 
                       SizedBox(height: AppSizes.spaceHeightMd),
                     ],
@@ -144,30 +215,36 @@ class RecipePreferencesBottomSheet extends StatelessWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: CustomButton(
-                        height: 45.h,
-                        text: 'Nutrition Info',
-                        backgroundColor: colorScheme.surfaceContainerHighest,
-                        textColor: colorScheme.primary,
-                        icon: Icons.health_and_safety_outlined,
-                        ontap: () {
-                          Navigator.pop(context);
-                          context.push('/nutrition-info');
-                        },
+                      child: Container(
+                        key: _nutritionButtonKey,
+                        child: CustomButton(
+                          height: 45.h,
+                          text: 'Nutrition Info',
+                          backgroundColor: colorScheme.surfaceContainerHighest,
+                          textColor: colorScheme.primary,
+                          icon: Icons.health_and_safety_outlined,
+                          ontap: () {
+                            Navigator.pop(context);
+                            context.push('/nutrition-info');
+                          },
+                        ),
                       ),
                     ),
                     SizedBox(width: AppSizes.spaceSm),
                     Expanded(
-                      child: CustomButton(
-                        height: 45.h,
-                        text: 'Generate Recipe',
-                        backgroundColor: colorScheme.primary,
-                        textColor: colorScheme.onPrimary,
-                        icon: Icons.auto_awesome,
-                        ontap: () {
-                          Navigator.pop(context);
-                          onGenerateRecipe();
-                        },
+                      child: Container(
+                        key: _generateButtonKey,
+                        child: CustomButton(
+                          height: 45.h,
+                          text: 'Generate Recipe',
+                          backgroundColor: colorScheme.primary,
+                          textColor: colorScheme.onPrimary,
+                          icon: Icons.auto_awesome,
+                          ontap: () {
+                            Navigator.pop(context);
+                            widget.onGenerateRecipe();
+                          },
+                        ),
                       ),
                     ),
                   ],

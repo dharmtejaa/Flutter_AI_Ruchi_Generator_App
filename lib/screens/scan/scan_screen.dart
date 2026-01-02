@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:ai_ruchi/core/services/image_recipe_api_service.dart';
+import 'package:ai_ruchi/core/services/tutorial_service.dart';
 import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/models/image_recipe_response.dart';
@@ -14,7 +15,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 class ScanScreen extends StatefulWidget {
-  const ScanScreen({super.key});
+  /// GlobalKey for the Scan nav item (for camera tutorial)
+  final GlobalKey? scanNavKey;
+
+  const ScanScreen({super.key, this.scanNavKey});
 
   @override
   State<ScanScreen> createState() => ScanScreenState();
@@ -23,6 +27,13 @@ class ScanScreen extends StatefulWidget {
 /// State class with public name so it can be accessed via GlobalKey
 class ScanScreenState extends State<ScanScreen> {
   final ImagePicker _picker = ImagePicker();
+
+  // ============================================================================
+  // TUTORIAL GLOBAL KEYS
+  // ============================================================================
+  final GlobalKey _imagePickerKey = GlobalKey();
+  final GlobalKey _tipButtonKey = GlobalKey();
+  final GlobalKey _proceedButtonKey = GlobalKey();
 
   /// Public method to open camera - can be called from MainShellScreen
   /// when user re-taps the Scan tab
@@ -33,6 +44,7 @@ class ScanScreenState extends State<ScanScreen> {
   File? _selectedImage;
   bool _isLoading = false;
   List<String>? _extractedIngredients;
+  bool _tutorialChecked = false;
 
   // Loading state
   String _loadingMessage = 'Generating Recipe...';
@@ -40,6 +52,29 @@ class ScanScreenState extends State<ScanScreen> {
   @override
   void initState() {
     super.initState();
+  }
+
+  /// Check and show scan screen tutorial when screen is first visited
+  /// Now includes the scan nav icon as the 4th step for camera access
+  void _checkAndShowTutorial() {
+    if (_tutorialChecked) return;
+    _tutorialChecked = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final isShown = await TutorialService.isScanTutorialShown();
+      if (!isShown && mounted) {
+        await Future.delayed(const Duration(milliseconds: 300));
+        if (mounted) {
+          TutorialService.showScanTutorial(
+            context: context,
+            imagePickerKey: _imagePickerKey,
+            tipButtonKey: _tipButtonKey,
+            proceedButtonKey: _proceedButtonKey,
+            scanNavKey: widget.scanNavKey, // Include nav icon as 4th step
+          );
+        }
+      }
+    });
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -326,6 +361,9 @@ class ScanScreenState extends State<ScanScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
+    // Check for tutorial on first build (includes nav icon as 4th step)
+    _checkAndShowTutorial();
+
     return SafeArea(
       child: Scaffold(
         body: LayoutBuilder(
@@ -352,6 +390,7 @@ class ScanScreenState extends State<ScanScreen> {
                           ),
                         ),
                         IconButton(
+                          key: _tipButtonKey,
                           onPressed: _showTipsDialog,
                           icon: Icon(Icons.info_outline_rounded),
                           color: colorScheme.primary,
@@ -392,6 +431,7 @@ class ScanScreenState extends State<ScanScreen> {
 
   Widget _buildModernImagePicker(ColorScheme colorScheme, TextTheme textTheme) {
     return GestureDetector(
+      key: _imagePickerKey,
       onTap: () => _pickImage(ImageSource.gallery),
       child: Container(
         height: 350.h, // Increased height since buttons are removed
@@ -614,6 +654,7 @@ class ScanScreenState extends State<ScanScreen> {
     final bool showPrimaryStyle = isEnabled || _isLoading;
 
     return Container(
+      key: _proceedButtonKey,
       width: double.infinity,
       height: 45.h,
       decoration: BoxDecoration(

@@ -1,3 +1,4 @@
+import 'package:ai_ruchi/core/services/tutorial_service.dart';
 import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/shared/widgets/common/custom_snackbar.dart';
@@ -8,8 +9,6 @@ import 'package:ai_ruchi/providers/recipe_provider.dart';
 import 'package:ai_ruchi/shared/widgets/common/dismiss_keyboard.dart';
 import 'package:ai_ruchi/shared/widgets/recipe/recipe_preferences_bottom_sheet.dart';
 import 'package:ai_ruchi/shared/widgets/ingredient/current_ingredients_section.dart';
-import 'package:ai_ruchi/shared/widgets/ingredient/ingredient_header_widget.dart';
-import 'package:ai_ruchi/shared/widgets/ingredient/ingredient_input_widget.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -17,7 +16,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class EntryScreen extends StatefulWidget {
-  const EntryScreen({super.key});
+  /// GlobalKey for the Recipes nav item (for generate tutorial)
+  final GlobalKey? recipesNavKey;
+
+  const EntryScreen({super.key, this.recipesNavKey});
 
   @override
   State<EntryScreen> createState() => EntryScreenState();
@@ -30,6 +32,17 @@ class EntryScreenState extends State<EntryScreen>
   final FocusNode _ingredientFocusNode = FocusNode();
   late AnimationController _headerAnimationController;
   late Animation<double> _headerAnimation;
+
+  // ============================================================================
+  // TUTORIAL GLOBAL KEYS
+  // ============================================================================
+  final GlobalKey _inputFieldKey = GlobalKey();
+  final GlobalKey _addButtonKey = GlobalKey();
+  final GlobalKey _categorySuggestionsKey = GlobalKey();
+
+  // Track if generate tutorial was shown
+  bool _hasShownGenerateTutorial = false;
+  late IngredientsProvider _ingredientsProvider;
 
   @override
   void initState() {
@@ -44,14 +57,72 @@ class EntryScreenState extends State<EntryScreen>
       curve: Curves.easeOut,
     );
     _headerAnimationController.forward();
+
+    // Listen to ingredient changes to trigger tutorial
+    _ingredientsProvider = context.read<IngredientsProvider>();
+    _ingredientsProvider.addListener(_onIngredientsChanged);
+
+    // Check and show tutorial after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndShowTutorial();
+    });
   }
 
   @override
   void dispose() {
+    _ingredientsProvider.removeListener(_onIngredientsChanged);
     _ingredientController.dispose();
     _ingredientFocusNode.dispose();
     _headerAnimationController.dispose();
     super.dispose();
+  }
+
+  void _onIngredientsChanged() {
+    if (_ingredientsProvider.currentIngredients.isNotEmpty) {
+      _checkAndShowGenerateNavTutorial();
+    }
+  }
+
+  /// Check if tutorial should be shown
+  Future<void> _checkAndShowTutorial() async {
+    final isShown = await TutorialService.isEntryTutorialShown();
+    if (!isShown && mounted) {
+      // Small delay for smooth transition after screen load
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        TutorialService.showEntryTutorial(
+          context: context,
+          inputKey: _inputFieldKey,
+          addButtonKey: _addButtonKey,
+          categorySuggestionsKey: _categorySuggestionsKey,
+          generateButtonKey: null,
+        );
+      }
+    }
+  }
+
+  /// Show generate nav tutorial after adding first ingredient
+  /// Hides keyboard first so the bottom nav is visible
+  Future<void> _checkAndShowGenerateNavTutorial() async {
+    if (_hasShownGenerateTutorial || widget.recipesNavKey == null) return;
+
+    final isShown = await TutorialService.isGenerateNavTutorialShown();
+    if (!isShown && mounted) {
+      _hasShownGenerateTutorial = true;
+
+      // Unfocus and hide keyboard first
+      _ingredientFocusNode.unfocus();
+      FocusScope.of(context).unfocus();
+
+      // Wait for keyboard to dismiss before showing tutorial
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        TutorialService.showGenerateNavTutorial(
+          context: context,
+          recipesNavKey: widget.recipesNavKey!,
+        );
+      }
+    }
   }
 
   void _handleAddIngredient() {
@@ -61,7 +132,7 @@ class EntryScreenState extends State<EntryScreen>
       text,
       onSuccess: () {
         _ingredientController.clear();
-        _ingredientFocusNode.requestFocus();
+        // Listener will handle tutorial trigger
       },
     );
   }
@@ -142,13 +213,8 @@ class EntryScreenState extends State<EntryScreen>
                             ),
                             SizedBox(height: AppSizes.spaceHeightSm),
 
-                            // Add Ingredient Input
-                            IngredientInputWidget(
-                              controller: _ingredientController,
-                              onAdd: _handleAddIngredient,
-                              focusNode: _ingredientFocusNode,
-                              hintText: 'e.g., 2 eggs, chicken',
-                            ),
+                            // Add Ingredient Input with Tutorial Keys
+                            _buildInputWithTutorialKeys(colorScheme),
                           ],
                         ),
                       ),
@@ -178,8 +244,12 @@ class EntryScreenState extends State<EntryScreen>
 
                                 SizedBox(height: AppSizes.spaceHeightMd),
 
-                                // Categorized Ingredient Suggestions (common for both states)
-                                const CategorizedIngredientSuggestions(),
+                                // Categorized Ingredient Suggestions with Tutorial Key
+                                Container(
+                                  key: _categorySuggestionsKey,
+                                  child:
+                                      const CategorizedIngredientSuggestions(),
+                                ),
 
                                 SizedBox(height: AppSizes.spaceHeightXl),
                               ],
@@ -195,6 +265,67 @@ class EntryScreenState extends State<EntryScreen>
           ),
         );
       },
+    );
+  }
+
+  /// Build the input row with tutorial keys
+  Widget _buildInputWithTutorialKeys(ColorScheme colorScheme) {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            key: _inputFieldKey,
+            child: TextField(
+              controller: _ingredientController,
+              focusNode: _ingredientFocusNode,
+              onSubmitted: (_) => _handleAddIngredient(),
+              decoration: InputDecoration(
+                hintText: 'e.g., 2 eggs, chicken',
+                filled: true,
+                fillColor: colorScheme.surfaceContainerHighest,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusXxxl),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusXxxl),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusXxxl),
+                  borderSide: BorderSide(
+                    color: colorScheme.primary,
+                    width: 1.5,
+                  ),
+                ),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: AppSizes.paddingMd,
+                  vertical: AppSizes.vPaddingSm,
+                ),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(width: AppSizes.spaceXs),
+        GestureDetector(
+          key: _addButtonKey,
+          onTap: _handleAddIngredient,
+          child: Container(
+            height: 45.h,
+            width: 45.w,
+            decoration: BoxDecoration(
+              color: colorScheme.primary,
+              borderRadius: BorderRadius.circular(AppSizes.radiusXxxl),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.add,
+              color: colorScheme.onPrimary,
+              size: AppSizes.iconLg,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
