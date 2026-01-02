@@ -33,7 +33,7 @@ class _IngredientCardWidgetState extends State<IngredientCardWidget>
 
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 200),
     );
 
     _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
@@ -159,25 +159,25 @@ class _IngredientCardWidgetState extends State<IngredientCardWidget>
     return ScaleTransition(
       scale: _scaleAnimation,
       child: Container(
-        margin: EdgeInsets.only(bottom: AppSizes.spaceHeightSm),
+        margin: EdgeInsets.only(bottom: AppSizes.spaceHeightXs),
         decoration: BoxDecoration(
           color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-          boxShadow: AppShadows.elevatedShadow(context),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          boxShadow: AppShadows.cardShadow(context),
         ),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: () {}, // For ripple effect
-            borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
             child: Padding(
-              padding: EdgeInsets.all(AppSizes.paddingSm),
+              padding: AppSizes.paddingAllXs,
               child: Row(
                 children: [
                   // Ingredient icon with solid background
                   Container(
-                    width: 35.w,
-                    height: 35.h,
+                    width: 30.w,
+                    height: 30.h,
                     decoration: BoxDecoration(
                       color: ingredientColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(AppSizes.radiusMd),
@@ -204,9 +204,6 @@ class _IngredientCardWidgetState extends State<IngredientCardWidget>
                           widget.ingredient.name,
                           style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
-
-                            overflow: TextOverflow.ellipsis,
-                            color: colorScheme.onSurface,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -224,7 +221,7 @@ class _IngredientCardWidgetState extends State<IngredientCardWidget>
 
                   // Quantity and unit controls
                   Container(
-                    height: 36.h,
+                    height: 34.h,
                     padding: EdgeInsets.symmetric(horizontal: 6.w),
                     decoration: BoxDecoration(
                       color: colorScheme.surfaceContainerHighest,
@@ -238,7 +235,7 @@ class _IngredientCardWidgetState extends State<IngredientCardWidget>
                       children: [
                         // Quantity input (supports up to 4 digits)
                         SizedBox(
-                          width: 45.w,
+                          width: 46.w,
                           child: CustomTextField(
                             hintText: 'Qty',
                             textAlign: TextAlign.center,
@@ -264,11 +261,11 @@ class _IngredientCardWidgetState extends State<IngredientCardWidget>
 
                         // Divider with spacing
                         Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 6.w),
+                          padding: EdgeInsets.symmetric(horizontal: 7.w),
                           child: Container(
                             height: 18.h,
-                            width: 1,
-                            color: colorScheme.onSurface.withValues(alpha: 0.2),
+                            width: 1.5,
+                            color: colorScheme.onSurface.withValues(alpha: 0.3),
                           ),
                         ),
 

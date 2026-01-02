@@ -7,11 +7,24 @@ import 'package:ai_ruchi/screens/recipe/recipe_generated_screen.dart';
 import 'package:ai_ruchi/screens/recipe/recipe_generation_loading_screen.dart';
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
+import 'package:ai_ruchi/screens/onboarding/onboarding_screen.dart';
 import 'package:go_router/go_router.dart';
 
 class AppRouter {
+  static bool isOnboardingCompleted = false;
+
   static final GoRouter router = GoRouter(
     initialLocation: '/',
+    redirect: (context, state) {
+      final isOnboarding = state.uri.toString() == '/onboarding';
+      if (!isOnboardingCompleted && !isOnboarding) {
+        return '/onboarding';
+      }
+      if (isOnboardingCompleted && isOnboarding) {
+        return '/';
+      }
+      return null;
+    },
     errorBuilder: (context, state) => Scaffold(
       body: Center(
         child: Column(
@@ -30,6 +43,11 @@ class AppRouter {
       ),
     ),
     routes: [
+      GoRoute(
+        path: '/onboarding',
+        name: 'Onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
       GoRoute(
         path: '/',
         name: 'Home',

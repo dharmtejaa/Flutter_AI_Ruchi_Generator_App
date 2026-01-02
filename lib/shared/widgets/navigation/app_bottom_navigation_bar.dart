@@ -11,17 +11,17 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// Animation configuration constants - easily adjustable
 class _NavConstants {
   // Sizes
-  static double get selectedSize => 62.w;
-  static double get unselectedSize => 48.w;
+  static double get selectedSize => 60.w;
+  static double get unselectedSize => 46.w;
   static double get spacing => 16.w;
-  static double get containerHeight => 76.h;
+  static double get containerHeight => 74.h;
 
   // Icon sizes
-  static double get activeIconSize => 30.sp;
-  static double get inactiveIconSize => 24.sp;
+  static double get activeIconSize => 28.sp;
+  static double get inactiveIconSize => 22.sp;
 
   // Animation
-  static const Duration scrollDuration = Duration(milliseconds: 350);
+  static const Duration scrollDuration = Duration(milliseconds: 250);
   static const Curve scrollCurve = Curves.easeOutCubic;
   static const double inactiveScale = 0.92;
   static const double inactiveOpacity = 0.55;
@@ -33,15 +33,26 @@ class AppBottomNavigationBar extends StatefulWidget {
   final int currentIndex;
   final Function(int)? onTap;
 
+  /// Callback when user taps on the ALREADY SELECTED tab
+  /// Useful for triggering actions like opening camera when re-tapping Scan
+  final Function(int)? onReTap;
+
   /// PageController from the main PageView for swipe sync
   /// This is CRITICAL for smooth swipe-driven animations
   final PageController? pageController;
+
+  /// Whether ingredients are present (affects Entry tab icon)
+  /// When true and on Entry tab, shows Generate icon (auto_awesome)
+  /// When false, shows regular recipe icon (restaurant_menu)
+  final bool hasIngredients;
 
   const AppBottomNavigationBar({
     super.key,
     this.currentIndex = 0,
     this.onTap,
+    this.onReTap,
     this.pageController,
+    this.hasIngredients = false,
   });
 
   @override
@@ -64,11 +75,16 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
   /// Tracks the last index that triggered haptic feedback
   int _lastHapticIndex = 0;
 
-  // Navigation items
-  final List<_NavItem> _items = [
+  // Navigation items - dynamically changes first item's icon based on hasIngredients
+  List<_NavItem> get _items => [
     _NavItem(
-      icon: Icons.restaurant_menu_outlined,
-      activeIcon: Icons.restaurant_menu,
+      // Show Generate icon (auto_awesome) for BOTH states when ingredients exist
+      icon: widget.hasIngredients
+          ? Icons.auto_awesome_outlined
+          : Icons.restaurant_menu_outlined,
+      activeIcon: widget.hasIngredients
+          ? Icons.auto_awesome
+          : Icons.restaurant_menu,
       label: 'Recipes',
     ),
     _NavItem(
@@ -199,6 +215,13 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
     // Light haptic feedback
     HapticFeedback.lightImpact();
 
+    // Check if user is re-tapping the current tab
+    if (index == widget.currentIndex) {
+      // Trigger onReTap callback (e.g., open camera on Scan screen)
+      widget.onReTap?.call(index);
+      return;
+    }
+
     // Update local page value
     _pageNotifier.value = index.toDouble();
     _lastHapticIndex = index;
@@ -246,6 +269,8 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
     if (nearest != widget.currentIndex) {
       _onItemTap(nearest);
     } else {
+      // Snapping back to current index - just animate scroll, don't trigger onReTap
+      // (onReTap should only be triggered by explicit tap, not by scroll snap)
       _animateScrollToPage(nearest.toDouble());
     }
   }
@@ -270,29 +295,46 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
       top: false,
       child: SizedBox(
         height: _NavConstants.containerHeight,
-        child: NotificationListener<ScrollNotification>(
-          onNotification: _handleScrollNotification,
-          child: ListView.builder(
-            controller: _scrollController,
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-            itemCount: _items.length,
-            itemExtent: _itemExtent,
-            itemBuilder: (context, index) {
-              final item = _items[index];
+        child: Stack(
+          children: [
+            // The scrollable navigation items
+            NotificationListener<ScrollNotification>(
+              onNotification: _handleScrollNotification,
+              child: ListView.builder(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                itemCount: _items.length,
+                itemExtent: _itemExtent,
+                itemBuilder: (context, index) {
+                  final item = _items[index];
 
-              return Center(
-                child: _AnimatedNavItemWidget(
-                  item: item,
-                  index: index,
-                  pageNotifier: _pageNotifier,
-                  colorScheme: colorScheme,
-                  onTap: () => _onItemTap(index),
+                  return Center(
+                    child: _AnimatedNavItemWidget(
+                      item: item,
+                      index: index,
+                      pageNotifier: _pageNotifier,
+                      colorScheme: colorScheme,
+                      onTap: () => _onItemTap(index),
+                    ),
+                  );
+                },
+              ),
+            ),
+            // Invisible overlay tap detector for the centered (active) item
+            // This ensures re-taps are always detected even when ListView consumes gestures
+            Center(
+              child: GestureDetector(
+                onTap: () => _onItemTap(widget.currentIndex),
+                behavior: HitTestBehavior.translucent,
+                child: SizedBox(
+                  width: _NavConstants.selectedSize,
+                  height: _NavConstants.selectedSize,
                 ),
-              );
-            },
-          ),
+              ),
+            ),
+          ],
         ),
       ),
     );

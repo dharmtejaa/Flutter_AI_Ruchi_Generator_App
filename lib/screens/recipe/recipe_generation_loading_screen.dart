@@ -25,20 +25,10 @@ class _RecipeGenerationLoadingScreenState
 
   Future<void> _generateRecipe() async {
     try {
-      // We don't show the dialog here because it should be shown BEFORE navigation
-      // But RecipeHelper.generateRecipeWithPreferences shows the dialog.
-      // So we need to handle this carefully.
-
-      // Actually, the best UX is:
-      // 1. Entry Screen -> Show Dialog
-      // 2. If confirmed -> Navigate to this Loading Screen
-      // 3. This Loading Screen -> Calls generateRecipe (without dialog)
-
-      // However, RecipeHelper combines them.
-      // For now, let's just call generateRecipeWithPreferences but we need to handle the dialog issue.
-      // If we are already on this screen, showing a dialog on top is fine.
-
-      final success = await RecipeHelper.generateRecipeWithPreferences(
+      // Use generateRecipeDirectly since preferences are already set
+      // in the bottom sheet before navigating to this screen.
+      // This prevents showing the preferences dialog twice.
+      final success = await RecipeHelper.generateRecipeDirectly(
         context,
         navigateOnSuccess: false, // We handle navigation
       );

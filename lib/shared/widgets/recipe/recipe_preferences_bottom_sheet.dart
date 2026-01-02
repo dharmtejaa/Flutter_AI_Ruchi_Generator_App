@@ -44,17 +44,18 @@ class RecipePreferencesBottomSheet extends StatelessWidget {
             children: [
               // Handle bar
               Container(
-                width: 40.w,
+                width: 50.w,
                 height: 4.h,
                 margin: EdgeInsets.only(
                   top: AppSizes.vPaddingSm,
                   bottom: AppSizes.vPaddingXs,
                 ),
                 decoration: BoxDecoration(
-                  color: colorScheme.outline.withValues(alpha: 0.3),
+                  color: colorScheme.outline,
                   borderRadius: BorderRadius.circular(AppSizes.radiusSm),
                 ),
               ),
+              SizedBox(height: AppSizes.spaceHeightXs),
 
               // Title
               Padding(

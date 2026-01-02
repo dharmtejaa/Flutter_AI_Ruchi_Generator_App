@@ -1,11 +1,12 @@
+import 'package:ai_ruchi/providers/ingredients_provider.dart';
 import 'package:ai_ruchi/screens/entry/entry_screen.dart';
 import 'package:ai_ruchi/screens/profile/profile_screen.dart';
 import 'package:ai_ruchi/screens/saved/saved_recipes_screen.dart';
 import 'package:ai_ruchi/screens/scan/scan_screen.dart';
-import 'package:ai_ruchi/shared/widgets/common/double_back_to_exit.dart';
 import 'package:ai_ruchi/shared/widgets/navigation/app_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 class MainShellScreen extends StatefulWidget {
   const MainShellScreen({super.key});
@@ -18,18 +19,31 @@ class _MainShellScreenState extends State<MainShellScreen> {
   int _currentIndex = 0;
   bool _isTapNavigation = false;
   late PageController _pageController;
+  DateTime? _lastBackPressTime;
 
-  final List<Widget> _screens = [
-    const EntryScreen(),
-    const ScanScreen(),
-    const SavedRecipesScreen(),
-    const ProfileScreen(),
-  ];
+  /// GlobalKey for EntryScreen to call showPreferencesSheet() method
+  final GlobalKey<EntryScreenState> _entryScreenKey =
+      GlobalKey<EntryScreenState>();
+
+  /// GlobalKey for ScanScreen to call openCamera() method
+  final GlobalKey<ScanScreenState> _scanScreenKey =
+      GlobalKey<ScanScreenState>();
+
+  /// Screens list - using keys for Entry and Scan screens
+  late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _currentIndex);
+
+    // Initialize screens with GlobalKeys for Entry and Scan screens
+    _screens = [
+      EntryScreen(key: _entryScreenKey),
+      ScanScreen(key: _scanScreenKey),
+      const SavedRecipesScreen(),
+      const ProfileScreen(),
+    ];
   }
 
   @override
@@ -45,6 +59,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
     });
     // Use jumpToPage for instant navigation without animation lag
     _pageController.jumpToPage(index);
+  }
+
+  /// Handle re-tap on the same tab
+  void _onNavReTap(int index) {
+    switch (index) {
+      case 0:
+        // Re-tap on Recipes tab -> Show preferences bottom sheet
+        _entryScreenKey.currentState?.showPreferencesSheet();
+        break;
+      case 1:
+        // Re-tap on Scan tab -> Open camera
+        _scanScreenKey.currentState?.openCamera();
+        break;
+    }
   }
 
   void _onPageChanged(int index) {
@@ -82,7 +110,44 @@ class _MainShellScreenState extends State<MainShellScreen> {
       ),
     );
 
-    return DoubleBackToExit(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+
+        // If not on Home tab, go to Home tab
+        if (_currentIndex != 0) {
+          _onNavTap(0);
+          return;
+        }
+
+        // Double back logic
+        final now = DateTime.now();
+        if (_lastBackPressTime == null ||
+            now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+          // First back press
+          _lastBackPressTime = now;
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Press back again to exit',
+                style: TextStyle(color: colorScheme.onInverseSurface),
+              ),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+              backgroundColor: colorScheme.inverseSurface,
+              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        } else {
+          // Second back press within duration
+          SystemNavigator.pop();
+        }
+      },
       child: Scaffold(
         body: PageView(
           controller: _pageController,
@@ -90,10 +155,21 @@ class _MainShellScreenState extends State<MainShellScreen> {
           physics: const BouncingScrollPhysics(),
           children: _screens,
         ),
-        bottomNavigationBar: AppBottomNavigationBar(
-          currentIndex: _currentIndex,
-          pageController: _pageController, // Enables swipe-progress animations
-          onTap: _onNavTap,
+        // Use Consumer to listen to ingredients changes for dynamic icon
+        bottomNavigationBar: Consumer<IngredientsProvider>(
+          builder: (context, ingredientsProvider, child) {
+            final hasIngredients =
+                ingredientsProvider.currentIngredients.isNotEmpty;
+
+            return AppBottomNavigationBar(
+              currentIndex: _currentIndex,
+              pageController: _pageController,
+              onTap: _onNavTap,
+              onReTap: _onNavReTap,
+              hasIngredients:
+                  hasIngredients, // Show Generate icon when ingredients exist
+            );
+          },
         ),
       ),
     );

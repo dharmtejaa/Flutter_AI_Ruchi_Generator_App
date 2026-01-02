@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/theme_provider.dart';
 import 'providers/ingredients_provider.dart';
@@ -11,6 +12,11 @@ import 'providers/saved_recipes_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize SharedPreferences and check onboarding status
+  final prefs = await SharedPreferences.getInstance();
+  AppRouter.isOnboardingCompleted =
+      prefs.getBool('onboarding_completed') ?? false;
 
   // Lock orientation to portrait only - must await this before runApp
   await SystemChrome.setPreferredOrientations([

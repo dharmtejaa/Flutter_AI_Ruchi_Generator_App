@@ -26,7 +26,7 @@ class IngredientHeaderWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: textTheme.displaySmall),
+          Text(title, style: textTheme.headlineMedium),
           if (recipeName != null || provider.recipeName.isNotEmpty) ...[
             SizedBox(height: AppSizes.spaceHeightXs),
             Text(

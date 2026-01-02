@@ -39,6 +39,33 @@ class RecipeHelper {
 
     if (result != true) return false;
 
+    // Generate recipe directly (no dialog)
+    return generateRecipeDirectly(
+      context,
+      showLoadingMessage: showLoadingMessage,
+      loadingMessage: loadingMessage,
+      navigateOnSuccess: navigateOnSuccess,
+      navigationRoute: navigationRoute,
+    );
+  }
+
+  /// Generate recipe directly WITHOUT showing preferences dialog
+  /// Use this when preferences are already set (e.g., from bottom sheet)
+  /// Returns true if recipe was generated successfully
+  static Future<bool> generateRecipeDirectly(
+    BuildContext context, {
+    bool showLoadingMessage = false,
+    String? loadingMessage,
+    bool navigateOnSuccess = false,
+    String? navigationRoute,
+  }) async {
+    final ingredientsProvider = context.read<IngredientsProvider>();
+
+    if (ingredientsProvider.currentIngredients.isEmpty) {
+      CustomSnackBar.showWarning(context, 'Please add at least one ingredient');
+      return false;
+    }
+
     final recipeProvider = context.read<RecipeProvider>();
 
     if (showLoadingMessage) {

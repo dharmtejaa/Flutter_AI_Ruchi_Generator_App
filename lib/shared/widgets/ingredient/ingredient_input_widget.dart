@@ -26,21 +26,21 @@ class IngredientInputWidget extends StatelessWidget {
       children: [
         Expanded(
           child: CustomTextField(
+            borderRadius: AppSizes.radiusXxxl,
+
             fillColor: colorScheme.surfaceContainerHighest,
-            hintText: hintText ?? 'Add ingredient (e.g., 2 eggs)...',
+            hintText: hintText ?? 'e.g., 2 eggs',
             controller: controller,
             onFieldSubmittedCallback: (_) => onAdd(),
             focusNode: focusNode,
           ),
         ),
-        SizedBox(width: AppSizes.spaceSm),
+        SizedBox(width: AppSizes.spaceXs),
         GestureDetector(
           onTap: onAdd,
           child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppSizes.paddingXs,
-              vertical: 7.h,
-            ),
+            height: 45.h,
+            width: 45.w,
             decoration: BoxDecoration(
               color: colorScheme.primary,
               borderRadius: BorderRadius.circular(AppSizes.radiusXxxl),
