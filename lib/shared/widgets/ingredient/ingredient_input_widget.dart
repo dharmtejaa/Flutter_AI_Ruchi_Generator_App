@@ -27,7 +27,6 @@ class IngredientInputWidget extends StatelessWidget {
         Expanded(
           child: CustomTextField(
             borderRadius: AppSizes.radiusXxxl,
-
             fillColor: colorScheme.surfaceContainerHighest,
             hintText: hintText ?? 'e.g., 2 eggs',
             controller: controller,

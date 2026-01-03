@@ -719,13 +719,8 @@ class _MacroDetailsGrid extends StatelessWidget {
 class _NutrientsList extends StatefulWidget {
   final List<MicroNutrientInfo> nutrients;
   final Color accentColor;
-  final int initialVisibleCount;
 
-  const _NutrientsList({
-    required this.nutrients,
-    required this.accentColor,
-    this.initialVisibleCount = 3,
-  });
+  const _NutrientsList({required this.nutrients, required this.accentColor});
 
   @override
   State<_NutrientsList> createState() => _NutrientsListState();
@@ -739,11 +734,11 @@ class _NutrientsListState extends State<_NutrientsList> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    final hasMore = widget.nutrients.length > widget.initialVisibleCount;
+    final hasMore = widget.nutrients.length > 3;
     final visibleNutrients = _isExpanded
         ? widget.nutrients
-        : widget.nutrients.take(widget.initialVisibleCount).toList();
-    final remainingCount = widget.nutrients.length - widget.initialVisibleCount;
+        : widget.nutrients.take(3).toList();
+    final remainingCount = widget.nutrients.length - 3;
 
     return Container(
       decoration: BoxDecoration(

@@ -1,7 +1,7 @@
 import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/theme/light_theme_colors.dart';
+import 'package:ai_ruchi/core/services/haptic_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // =============================================================================
@@ -221,7 +221,7 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
 
   void _onItemTap(int index) {
     // Light haptic feedback
-    HapticFeedback.lightImpact();
+    HapticService.lightImpact();
 
     // Check if user is re-tapping the current tab
     if (index == widget.currentIndex) {
@@ -287,7 +287,7 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
     final newIndex = value.round();
     if (newIndex != _lastHapticIndex) {
       _lastHapticIndex = newIndex;
-      HapticFeedback.selectionClick();
+      HapticService.selectionClick();
     }
   }
 
@@ -297,7 +297,8 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
 
     // Calculate horizontal padding to allow first/last items to center
     final screenWidth = MediaQuery.of(context).size.width;
-    final horizontalPadding = (screenWidth - _NavConstants.selectedSize) / 2;
+    // Updated padding to correctly center the item including its spacing
+    final horizontalPadding = (screenWidth - _itemExtent) / 2;
 
     return SafeArea(
       top: false,
@@ -311,7 +312,10 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
               child: ListView.builder(
                 controller: _scrollController,
                 scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
+                physics: _SnapScrollPhysics(
+                  itemExtent: _itemExtent,
+                  parent: const BouncingScrollPhysics(),
+                ),
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 itemCount: _items.length,
                 itemExtent: _itemExtent,
@@ -484,5 +488,59 @@ class _AnimatedNavItemWidget extends StatelessWidget {
   /// Linear interpolation helper
   double _lerpDouble(double a, double b, double t) {
     return a + (b - a) * t;
+  }
+}
+
+class _SnapScrollPhysics extends ScrollPhysics {
+  final double itemExtent;
+
+  const _SnapScrollPhysics({required this.itemExtent, super.parent});
+
+  @override
+  _SnapScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return _SnapScrollPhysics(
+      itemExtent: itemExtent,
+      parent: buildParent(ancestor),
+    );
+  }
+
+  @override
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) {
+    // If we're out of range, defer to parent (BouncingScrollPhysics)
+    if ((velocity <= 0.0 && position.pixels <= position.minScrollExtent) ||
+        (velocity >= 0.0 && position.pixels >= position.maxScrollExtent)) {
+      return super.createBallisticSimulation(position, velocity);
+    }
+
+    final Tolerance tolerance = toleranceFor(position);
+    final double target = _getTargetPixels(position, tolerance, velocity);
+
+    if (target != position.pixels) {
+      return ScrollSpringSimulation(
+        spring,
+        position.pixels,
+        target,
+        velocity,
+        tolerance: tolerance,
+      );
+    }
+    return null;
+  }
+
+  double _getTargetPixels(
+    ScrollMetrics position,
+    Tolerance tolerance,
+    double velocity,
+  ) {
+    double page = position.pixels / itemExtent;
+    if (velocity < -tolerance.velocity) {
+      page -= 0.5;
+    } else if (velocity > tolerance.velocity) {
+      page += 0.5;
+    }
+    return page.roundToDouble() * itemExtent;
   }
 }

@@ -454,7 +454,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Implement logout logic
+              // code
             },
             child: const Text('Logout'),
           ),

@@ -3,6 +3,7 @@ import 'package:ai_ruchi/screens/entry/entry_screen.dart';
 import 'package:ai_ruchi/screens/profile/profile_screen.dart';
 import 'package:ai_ruchi/screens/saved/saved_recipes_screen.dart';
 import 'package:ai_ruchi/screens/scan/scan_screen.dart';
+import 'package:ai_ruchi/core/services/haptic_service.dart';
 import 'package:ai_ruchi/shared/widgets/navigation/app_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -86,7 +87,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     if (_isTapNavigation) {
       _isTapNavigation = false;
     } else {
-      HapticFeedback.lightImpact();
+      HapticService.lightImpact();
     }
     setState(() {
       _currentIndex = index;

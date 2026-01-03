@@ -1,3 +1,4 @@
+import 'package:ai_ruchi/core/services/haptic_service.dart';
 import 'package:ai_ruchi/core/services/tutorial_service.dart';
 import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
@@ -126,6 +127,7 @@ class EntryScreenState extends State<EntryScreen>
   }
 
   void _handleAddIngredient() {
+    HapticService.lightImpact();
     final text = _ingredientController.text;
     IngredientHelper.addIngredientFromText(
       context,

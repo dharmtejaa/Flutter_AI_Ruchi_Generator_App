@@ -103,7 +103,7 @@ class CustomTextField extends StatelessWidget {
       width: width ?? 0.9.sw,
       child: ValueListenableBuilder<bool>(
         valueListenable: notifier,
-        builder: (_, isObscure, __) {
+        builder: (_, isObscure, _) {
           return TextFormField(
             enabled: enabled ?? true,
             controller: controller,

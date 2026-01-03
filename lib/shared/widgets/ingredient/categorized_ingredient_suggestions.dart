@@ -23,7 +23,6 @@ class _CategorizedIngredientSuggestionsState
   final List<String> _expandedCategories = []; // List to maintain order
   final Map<String, GlobalKey> _categoryKeys = {};
   late AnimationController _arrowAnimationController;
-  late Animation<double> _arrowAnimation;
 
   @override
   void initState() {
@@ -33,12 +32,6 @@ class _CategorizedIngredientSuggestionsState
       duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
 
-    _arrowAnimation = Tween<double>(begin: 0, end: 8).animate(
-      CurvedAnimation(
-        parent: _arrowAnimationController,
-        curve: Curves.easeInOut,
-      ),
-    );
 
     // Initialize keys for all categories
     for (final category in IngredientCategories.all) {

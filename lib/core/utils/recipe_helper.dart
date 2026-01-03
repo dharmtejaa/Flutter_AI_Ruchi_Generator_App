@@ -41,6 +41,7 @@ class RecipeHelper {
 
     // Generate recipe directly (no dialog)
     return generateRecipeDirectly(
+      // ignore: use_build_context_synchronously
       context,
       showLoadingMessage: showLoadingMessage,
       loadingMessage: loadingMessage,
