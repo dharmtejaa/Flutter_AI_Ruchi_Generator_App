@@ -479,7 +479,7 @@ class ScanScreenState extends State<ScanScreen> {
         ),
         // Remove button with glassmorphism
         Positioned(
-          top: AppSizes.paddingSm,
+          top: AppSizes.paddingXs,
           right: AppSizes.paddingSm,
           child: GestureDetector(
             onTap: _clearImage,
@@ -508,20 +508,20 @@ class ScanScreenState extends State<ScanScreen> {
         ),
         // Success indicator
         Positioned(
-          bottom: AppSizes.paddingSm,
+          bottom: AppSizes.paddingXs,
           left: AppSizes.paddingSm,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppSizes.radiusXxxl),
+            borderRadius: BorderRadius.circular(AppSizes.radiusXxl),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Container(
                 padding: EdgeInsets.symmetric(
-                  horizontal: AppSizes.paddingSm,
+                  horizontal: AppSizes.paddingXs,
                   vertical: AppSizes.vPaddingXs,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.8),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusXxxl),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusXxl),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -530,15 +530,6 @@ class ScanScreenState extends State<ScanScreen> {
                       Icons.check_circle_rounded,
                       color: colorScheme.onPrimary,
                       size: AppSizes.iconXs,
-                    ),
-                    SizedBox(width: AppSizes.spaceXs),
-                    Text(
-                      'Ready',
-                      style: TextStyle(
-                        color: colorScheme.onPrimary,
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
                     ),
                   ],
                 ),

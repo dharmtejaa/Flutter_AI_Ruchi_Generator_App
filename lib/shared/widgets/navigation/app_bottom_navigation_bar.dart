@@ -1,6 +1,5 @@
-import 'package:ai_ruchi/core/theme/app_shadows.dart';
-import 'package:ai_ruchi/core/theme/light_theme_colors.dart';
 import 'package:ai_ruchi/core/services/haptic_service.dart';
+import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -11,7 +10,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// Animation configuration constants - easily adjustable
 class _NavConstants {
   // Sizes
-  static double get selectedSize => 65.w;
+  static double get selectedSize => 60.w;
   static double get unselectedSize => 50.w;
   static double get spacing => 18.w;
   static double get containerHeight => 75.h;
@@ -21,29 +20,25 @@ class _NavConstants {
   static double get inactiveIconSize => 24.sp;
 
   // Animation
-  static const Duration scrollDuration = Duration(milliseconds: 250);
+  static const Duration scrollDuration = Duration(milliseconds: 400);
   static const Curve scrollCurve = Curves.easeOutCubic;
   static const double inactiveScale = 0.92;
-  static const double inactiveOpacity = 0.55;
+  static const double inactiveOpacity = 0.75;
   static const double activeOpacity = 1.0;
 }
 
-/// Bottom navigation bar with swipe-progress-driven animations
+/// Bottom navigation bar with premium swipe-progress-driven animations
 class AppBottomNavigationBar extends StatefulWidget {
   final int currentIndex;
   final Function(int)? onTap;
 
   /// Callback when user taps on the ALREADY SELECTED tab
-  /// Useful for triggering actions like opening camera when re-tapping Scan
   final Function(int)? onReTap;
 
   /// PageController from the main PageView for swipe sync
-  /// This is CRITICAL for smooth swipe-driven animations
   final PageController? pageController;
 
   /// Whether ingredients are present (affects Entry tab icon)
-  /// When true and on Entry tab, shows Generate icon (auto_awesome)
-  /// When false, shows regular recipe icon (restaurant_menu)
   final bool hasIngredients;
 
   /// GlobalKey for the Recipes/Generate nav item (for tutorial targeting)
@@ -71,7 +66,6 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
   late ScrollController _scrollController;
 
   /// ValueNotifier for current page value (continuous during swipe)
-  /// Replaces setState for performant animations
   late final ValueNotifier<double> _pageNotifier;
 
   /// Flag to prevent scroll conflicts during programmatic scrolling
@@ -86,7 +80,6 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
   // Navigation items - dynamically changes first item's icon based on hasIngredients
   List<_NavItem> get _items => [
     _NavItem(
-      // Show Generate icon (auto_awesome) for BOTH states when ingredients exist
       icon: widget.hasIngredients
           ? Icons.auto_awesome_outlined
           : Icons.restaurant_menu_outlined,
@@ -141,11 +134,16 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
       widget.pageController?.addListener(_onPageControllerUpdate);
     }
 
-    // If currentIndex changed programmatically (not from swipe), update
-    if (oldWidget.currentIndex != widget.currentIndex &&
-        _pageNotifier.value.round() != widget.currentIndex) {
-      _pageNotifier.value = widget.currentIndex.toDouble();
-      _animateScrollToPage(_pageNotifier.value, animate: true);
+    // If currentIndex changed, update accordingly
+    if (oldWidget.currentIndex != widget.currentIndex) {
+      final isPageAnimating =
+          widget.pageController?.hasClients == true &&
+          widget.pageController!.position.isScrollingNotifier.value;
+
+      if (!isPageAnimating) {
+        _pageNotifier.value = widget.currentIndex.toDouble();
+        _animateScrollToPage(_pageNotifier.value, animate: true);
+      }
     }
   }
 
@@ -159,19 +157,14 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
 
   /// Called continuously during PageView swiping
   void _onPageControllerUpdate() {
-    // Ignore PageView updates if user is manually dragging the bottom bar
     if (_isInteracting) return;
-
     if (widget.pageController?.hasClients != true) return;
 
     final newPageValue = widget.pageController!.page ?? 0.0;
 
-    // Only update if value actually changed
     if ((newPageValue - _pageNotifier.value).abs() > 0.001) {
       _pageNotifier.value = newPageValue;
       _checkSelectionHaptic(newPageValue);
-
-      // Smoothly scroll the bottom bar to follow the swipe
       _syncScrollWithPageValue(newPageValue);
     }
   }
@@ -184,11 +177,10 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
     final maxScroll = _scrollController.position.maxScrollExtent;
     final clampedOffset = targetOffset.clamp(0.0, maxScroll);
 
-    // Use jumpTo for continuous sync during swipe (no animation delay)
     _scrollController.jumpTo(clampedOffset);
   }
 
-  /// Calculate the scroll offset to center an item at given (continuous) page value
+  /// Calculate the scroll offset to center an item at given page value
   double _calculateScrollOffset(double pageValue) {
     return pageValue * _itemExtent;
   }
@@ -220,29 +212,20 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
   }
 
   void _onItemTap(int index) {
-    // Light haptic feedback
-    HapticService.lightImpact();
+    HapticService.mediumImpact();
 
-    // Check if user is re-tapping the current tab
     if (index == widget.currentIndex) {
-      // Trigger onReTap callback (e.g., open camera on Scan screen)
       widget.onReTap?.call(index);
       return;
     }
 
-    // Update local page value
     _pageNotifier.value = index.toDouble();
     _lastHapticIndex = index;
-
-    // Animate scroll
     _animateScrollToPage(index.toDouble(), animate: true);
-
-    // Notify parent
     widget.onTap?.call(index);
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
-    // Ignore programmatic scrolls to prevent feedback loops
     if (_isProgrammaticScroll) return false;
 
     if (notification is ScrollStartNotification) {
@@ -277,8 +260,6 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
     if (nearest != widget.currentIndex) {
       _onItemTap(nearest);
     } else {
-      // Snapping back to current index - just animate scroll, don't trigger onReTap
-      // (onReTap should only be triggered by explicit tap, not by scroll snap)
       _animateScrollToPage(nearest.toDouble());
     }
   }
@@ -287,7 +268,7 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
     final newIndex = value.round();
     if (newIndex != _lastHapticIndex) {
       _lastHapticIndex = newIndex;
-      HapticService.selectionClick();
+      HapticService.lightImpact();
     }
   }
 
@@ -295,71 +276,53 @@ class _AppBottomNavigationBarState extends State<AppBottomNavigationBar> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Calculate horizontal padding to allow first/last items to center
     final screenWidth = MediaQuery.of(context).size.width;
-    // Updated padding to correctly center the item including its spacing
     final horizontalPadding = (screenWidth - _itemExtent) / 2;
 
     return SafeArea(
       top: false,
+
       child: SizedBox(
         height: _NavConstants.containerHeight,
-        child: Stack(
-          children: [
-            // The scrollable navigation items
-            NotificationListener<ScrollNotification>(
-              onNotification: _handleScrollNotification,
-              child: ListView.builder(
-                controller: _scrollController,
-                scrollDirection: Axis.horizontal,
-                physics: _SnapScrollPhysics(
-                  itemExtent: _itemExtent,
-                  parent: const BouncingScrollPhysics(),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                itemCount: _items.length,
-                itemExtent: _itemExtent,
-                itemBuilder: (context, index) {
-                  final item = _items[index];
 
-                  // Determine the GlobalKey for this item
-                  GlobalKey? itemKey;
-                  if (index == 0) {
-                    itemKey = widget.recipesNavKey;
-                  } else if (index == 1) {
-                    itemKey = widget.scanNavKey;
-                  }
-
-                  final navWidget = _AnimatedNavItemWidget(
-                    item: item,
-                    index: index,
-                    pageNotifier: _pageNotifier,
-                    colorScheme: colorScheme,
-                    onTap: () => _onItemTap(index),
-                  );
-
-                  // Wrap with keyed container if key is provided
-                  return Center(
-                    child: itemKey != null
-                        ? Container(key: itemKey, child: navWidget)
-                        : navWidget,
-                  );
-                },
-              ),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: _handleScrollNotification,
+          child: ListView.builder(
+            controller: _scrollController,
+            scrollDirection: Axis.horizontal,
+            physics: _SnapScrollPhysics(
+              itemExtent: _itemExtent,
+              parent: const BouncingScrollPhysics(),
             ),
-            // Invisible overlay tap detector for the centered (active) item
-            // This ensures re-taps are always detected even when ListView consumes gestures
-            Center(
-              child: GestureDetector(
-                onTap: () => _onItemTap(widget.currentIndex),
-                behavior: HitTestBehavior.translucent,
-                child: SizedBox(
-                  width: _NavConstants.selectedSize,
-                  height: _NavConstants.selectedSize,
-                ),
-              ),
-            ),
-          ],
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            itemCount: _items.length,
+            itemExtent: _itemExtent,
+            itemBuilder: (context, index) {
+              final item = _items[index];
+
+              GlobalKey? itemKey;
+              if (index == 0) {
+                itemKey = widget.recipesNavKey;
+              } else if (index == 1) {
+                itemKey = widget.scanNavKey;
+              }
+
+              final navWidget = _AnimatedNavItemWidget(
+                item: item,
+                index: index,
+                pageNotifier: _pageNotifier,
+                colorScheme: colorScheme,
+                onTap: () => _onItemTap(index),
+              );
+
+              return Align(
+                alignment: Alignment.center,
+                child: itemKey != null
+                    ? Container(key: itemKey, child: navWidget)
+                    : navWidget,
+              );
+            },
+          ),
         ),
       ),
     );
@@ -374,12 +337,13 @@ class _NavItem {
   _NavItem({required this.icon, required this.activeIcon, required this.label});
 }
 
-/// Individual navigation item with swipe-progress-driven animations using ValueNotifier
+/// Individual navigation item with gradient circle background
 class _AnimatedNavItemWidget extends StatelessWidget {
   final _NavItem item;
   final int index;
   final ValueNotifier<double> pageNotifier;
   final ColorScheme colorScheme;
+
   final VoidCallback onTap;
 
   const _AnimatedNavItemWidget({
@@ -387,6 +351,7 @@ class _AnimatedNavItemWidget extends StatelessWidget {
     required this.index,
     required this.pageNotifier,
     required this.colorScheme,
+
     required this.onTap,
   });
 
@@ -397,79 +362,95 @@ class _AnimatedNavItemWidget extends StatelessWidget {
       builder: (context, pageValue, child) {
         final activeness = _calculateActiveness(pageValue);
 
+        // Apply easing for smoother visual transitions
+        final easedActiveness = Curves.easeOutCubic.transform(activeness);
+
         // ========================================================================
         // INTERPOLATION CALCULATIONS
         // ========================================================================
 
-        // Size interpolation
+        // Size interpolation with easing
         final circleSize = _lerpDouble(
           _NavConstants.unselectedSize,
           _NavConstants.selectedSize,
-          activeness,
+          easedActiveness,
         );
 
         // Icon size interpolation
         final iconSize = _lerpDouble(
           _NavConstants.inactiveIconSize,
           _NavConstants.activeIconSize,
-          activeness,
+          easedActiveness,
         );
 
         // Scale factor
-        final scale = _lerpDouble(_NavConstants.inactiveScale, 1.0, activeness);
+        final scale = _lerpDouble(
+          _NavConstants.inactiveScale,
+          1,
+          easedActiveness,
+        );
 
         // Opacity interpolation
         final opacity = _lerpDouble(
           _NavConstants.inactiveOpacity,
           _NavConstants.activeOpacity,
-          activeness,
+          easedActiveness,
         );
 
-        // Colors
-        final activeColor = colorScheme.surface;
-        final inactiveColor = colorScheme.onSurfaceVariant.withValues(
-          alpha: 0.4,
-        );
+        // Vertical offset for floating effect on active
+        final verticalOffset = _lerpDouble(0, -6.h, easedActiveness);
 
-        final Color bgColor = Color.lerp(
-          inactiveColor,
-          activeColor,
-          activeness,
+        // ========================================================================
+        // SOLID COLORS FOR CIRCLE
+        // ========================================================================
+
+        // Inactive and active background colors
+        final inactiveBgColor = colorScheme.surfaceContainerHigh;
+        final activeBgColor = colorScheme.primary;
+
+        // Interpolate background color based on activeness
+        final bgColor = Color.lerp(
+          inactiveBgColor,
+          activeBgColor,
+          easedActiveness,
         )!;
 
-        final activeIconColor = colorScheme.primary;
-        final inactiveIconColor = LightThemeColors.mediumGray;
+        // ========================================================================
+        // ICON COLORS
+        // ========================================================================
+
+        final inactiveIconColor = colorScheme.onSurfaceVariant;
+        final activeIconColor = colorScheme.onPrimary;
         final iconColor = Color.lerp(
           inactiveIconColor,
           activeIconColor,
-          activeness,
+          easedActiveness,
         )!;
 
-        // Shadow
-        final shadows = activeness > 0.3
-            ? AppShadows.floatingShadow(context)
-            : null;
-
-        // Icon
-        final icon = activeness > 0.5 ? item.activeIcon : item.icon;
+        // Icon selection
+        final icon = easedActiveness > 0.5 ? item.activeIcon : item.icon;
 
         return GestureDetector(
           onTap: onTap,
           behavior: HitTestBehavior.opaque,
-          child: Transform.scale(
-            scale: scale,
-            child: Opacity(
-              opacity: opacity,
-              child: Container(
-                width: circleSize,
-                height: circleSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: bgColor,
-                  boxShadow: shadows,
-                ),
-                child: Center(
-                  child: Icon(icon, color: iconColor, size: iconSize),
+          child: Transform.translate(
+            offset: Offset(0, verticalOffset),
+            child: Transform.scale(
+              scale: scale,
+              child: Opacity(
+                opacity: opacity,
+                child: Container(
+                  width: circleSize,
+                  height: circleSize,
+                  margin: EdgeInsets.only(top: 10.h),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: bgColor,
+                    boxShadow: AppShadows.fabShadow(context),
+                  ),
+                  child: Center(
+                    child: Icon(icon, color: iconColor, size: iconSize),
+                  ),
                 ),
               ),
             ),
@@ -509,7 +490,6 @@ class _SnapScrollPhysics extends ScrollPhysics {
     ScrollMetrics position,
     double velocity,
   ) {
-    // If we're out of range, defer to parent (BouncingScrollPhysics)
     if ((velocity <= 0.0 && position.pixels <= position.minScrollExtent) ||
         (velocity >= 0.0 && position.pixels >= position.maxScrollExtent)) {
       return super.createBallisticSimulation(position, velocity);

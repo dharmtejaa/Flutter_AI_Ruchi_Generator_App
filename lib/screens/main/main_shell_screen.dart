@@ -65,7 +65,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
     setState(() {
       _currentIndex = index;
     });
-    // Use jumpToPage for instant navigation without animation lag
+    // Use jumpToPage for instant page switch
+    // The bottom navigation bar handles its own smooth animation
+    // Using animateToPage here causes double animation effect
     _pageController.jumpToPage(index);
   }
 
@@ -157,13 +159,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
         }
       },
       child: Scaffold(
+        extendBody: true,
         body: PageView(
           controller: _pageController,
           onPageChanged: _onPageChanged,
           physics: const BouncingScrollPhysics(),
           children: _screens,
         ),
-        // Use Consumer to listen to ingredients changes for dynamic icon
         bottomNavigationBar: Consumer<IngredientsProvider>(
           builder: (context, ingredientsProvider, child) {
             final hasIngredients =

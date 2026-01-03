@@ -8,11 +8,11 @@ import 'package:ai_ruchi/core/utils/ingredient_helper.dart';
 import 'package:ai_ruchi/providers/ingredients_provider.dart';
 import 'package:ai_ruchi/providers/recipe_provider.dart';
 import 'package:ai_ruchi/shared/widgets/common/dismiss_keyboard.dart';
+import 'package:ai_ruchi/shared/widgets/ingredient/ingredient_input_widget.dart';
 import 'package:ai_ruchi/shared/widgets/recipe/recipe_preferences_bottom_sheet.dart';
 import 'package:ai_ruchi/shared/widgets/ingredient/current_ingredients_section.dart';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -216,7 +216,14 @@ class EntryScreenState extends State<EntryScreen>
                             SizedBox(height: AppSizes.spaceHeightSm),
 
                             // Add Ingredient Input with Tutorial Keys
-                            _buildInputWithTutorialKeys(colorScheme),
+                            IngredientInputWidget(
+                              controller: _ingredientController,
+                              onAdd: _handleAddIngredient,
+                              focusNode: _ingredientFocusNode,
+                              hintText: 'e.g., 2 eggs, 1 cup flour',
+                              inputKey: _inputFieldKey,
+                              addButtonKey: _addButtonKey,
+                            ),
                           ],
                         ),
                       ),
@@ -267,67 +274,6 @@ class EntryScreenState extends State<EntryScreen>
           ),
         );
       },
-    );
-  }
-
-  /// Build the input row with tutorial keys
-  Widget _buildInputWithTutorialKeys(ColorScheme colorScheme) {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            key: _inputFieldKey,
-            child: TextField(
-              controller: _ingredientController,
-              focusNode: _ingredientFocusNode,
-              onSubmitted: (_) => _handleAddIngredient(),
-              decoration: InputDecoration(
-                hintText: 'e.g., 2 eggs, chicken',
-                filled: true,
-                fillColor: colorScheme.surfaceContainerHighest,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusXxxl),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusXxxl),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusXxxl),
-                  borderSide: BorderSide(
-                    color: colorScheme.primary,
-                    width: 1.5,
-                  ),
-                ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: AppSizes.paddingMd,
-                  vertical: AppSizes.vPaddingSm,
-                ),
-              ),
-            ),
-          ),
-        ),
-        SizedBox(width: AppSizes.spaceXs),
-        GestureDetector(
-          key: _addButtonKey,
-          onTap: _handleAddIngredient,
-          child: Container(
-            height: 45.h,
-            width: 45.w,
-            decoration: BoxDecoration(
-              color: colorScheme.primary,
-              borderRadius: BorderRadius.circular(AppSizes.radiusXxxl),
-            ),
-            alignment: Alignment.center,
-            child: Icon(
-              Icons.add,
-              color: colorScheme.onPrimary,
-              size: AppSizes.iconLg,
-            ),
-          ),
-        ),
-      ],
     );
   }
 

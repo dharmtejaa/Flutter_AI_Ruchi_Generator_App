@@ -7,8 +7,13 @@ class IngredientInputWidget extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onAdd;
   final String? hintText;
-
   final FocusNode? focusNode;
+
+  /// Optional key for tutorial targeting the input field
+  final GlobalKey? inputKey;
+
+  /// Optional key for tutorial targeting the add button
+  final GlobalKey? addButtonKey;
 
   const IngredientInputWidget({
     super.key,
@@ -16,6 +21,8 @@ class IngredientInputWidget extends StatelessWidget {
     required this.onAdd,
     this.hintText,
     this.focusNode,
+    this.inputKey,
+    this.addButtonKey,
   });
 
   @override
@@ -25,17 +32,21 @@ class IngredientInputWidget extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: CustomTextField(
-            borderRadius: AppSizes.radiusXxxl,
-            fillColor: colorScheme.surfaceContainerHighest,
-            hintText: hintText ?? 'e.g., 2 eggs',
-            controller: controller,
-            onFieldSubmittedCallback: (_) => onAdd(),
-            focusNode: focusNode,
+          child: Container(
+            key: inputKey,
+            child: CustomTextField(
+              borderRadius: AppSizes.radiusXxxl,
+              fillColor: colorScheme.surfaceContainerHighest,
+              hintText: hintText ?? 'e.g., 2 eggs',
+              controller: controller,
+              onFieldSubmittedCallback: (_) => onAdd(),
+              focusNode: focusNode,
+            ),
           ),
         ),
         SizedBox(width: AppSizes.spaceXs),
         GestureDetector(
+          key: addButtonKey,
           onTap: onAdd,
           child: Container(
             height: 45.h,
