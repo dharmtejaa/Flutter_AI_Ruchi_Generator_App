@@ -1,15 +1,20 @@
 import 'package:ai_ruchi/models/recipe.dart';
+import 'package:ai_ruchi/models/removed_ingredient.dart';
 
 /// Model for the API response from generate-from-image endpoint
 class ImageRecipeResponse {
   final bool success;
   final List<String> extractedIngredients;
   final Recipe recipe;
+  final List<RemovedIngredient>? removedIngredients;
+  final String? analysisNote;
 
   ImageRecipeResponse({
     required this.success,
     required this.extractedIngredients,
     required this.recipe,
+    this.removedIngredients,
+    this.analysisNote,
   });
 
   factory ImageRecipeResponse.fromJson(Map<String, dynamic> json) {
@@ -21,6 +26,10 @@ class ImageRecipeResponse {
               .toList() ??
           [],
       recipe: Recipe.fromJson(json['recipe'] ?? {}),
+      removedIngredients: (json['removedIngredients'] as List<dynamic>?)
+          ?.map((e) => RemovedIngredient.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      analysisNote: json['analysisNote']?.toString(),
     );
   }
 }
@@ -52,15 +61,20 @@ class ImageRecipeError {
 class RecipePreferences {
   final String cuisine;
   final String dietary;
+  final int servings;
 
-  RecipePreferences({this.cuisine = 'Any', this.dietary = 'none'});
+  RecipePreferences({
+    this.cuisine = 'Any',
+    this.dietary = 'none',
+    this.servings = 4,
+  });
 
-  Map<String, String> toJson() {
-    return {'cuisine': cuisine, 'dietary': dietary};
+  Map<String, dynamic> toJson() {
+    return {'cuisine': cuisine, 'dietary': dietary, 'servings': servings};
   }
 
   @override
   String toString() {
-    return '{"cuisine":"$cuisine","dietary":"$dietary"}';
+    return '{"cuisine":"$cuisine","dietary":"$dietary","servings":$servings}';
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/theme/app_theme.dart';
+import 'providers/app_settings_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/ingredients_provider.dart';
 import 'providers/recipe_provider.dart';
@@ -41,6 +42,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => IngredientsProvider()),
         ChangeNotifierProvider(create: (_) => RecipeProvider()),
         ChangeNotifierProvider(create: (_) => SavedRecipesProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AppSettingsProvider()..loadSettings(),
+        ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

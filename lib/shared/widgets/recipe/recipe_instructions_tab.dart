@@ -1,6 +1,9 @@
+import 'package:ai_ruchi/core/services/tts_service.dart';
 import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
+import 'package:ai_ruchi/core/utils/time_parser_utils.dart';
 import 'package:ai_ruchi/models/recipe.dart';
+import 'package:ai_ruchi/shared/widgets/recipe/instruction_timer_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -22,6 +25,31 @@ class RecipeInstructionsTab extends StatefulWidget {
 
 class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
   final Set<int> _completedSteps = {};
+  final TtsService _ttsService = TtsService();
+  int? _currentlyPlayingIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _initTts();
+  }
+
+  Future<void> _initTts() async {
+    await _ttsService.initialize();
+    _ttsService.onComplete = (_) {
+      if (mounted) {
+        setState(() {
+          _currentlyPlayingIndex = null;
+        });
+      }
+    };
+  }
+
+  @override
+  void dispose() {
+    _ttsService.stop();
+    super.dispose();
+  }
 
   /// Check if a step can be toggled (must be sequential)
   bool _canToggleStep(int index) {
@@ -69,6 +97,24 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
       }
     }
     return widget.recipe.instructions.length - 1;
+  }
+
+  /// Toggle TTS for an instruction
+  void _toggleTts(int index, String text) async {
+    if (_currentlyPlayingIndex == index) {
+      // Currently playing this step, stop it
+      await _ttsService.stop();
+      setState(() {
+        _currentlyPlayingIndex = null;
+      });
+    } else {
+      // Stop any current playback and start new
+      await _ttsService.stop();
+      setState(() {
+        _currentlyPlayingIndex = index;
+      });
+      await _ttsService.speak(text);
+    }
   }
 
   @override
@@ -154,6 +200,11 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
               final isLastStep = index == widget.recipe.instructions.length - 1;
               final isLocked = !_canToggleStep(index);
               final isNextStep = index == _getNextIncompleteStep();
+              final isPlaying = _currentlyPlayingIndex == index;
+
+              // Check for time in instruction
+              final duration = TimeParserUtils.parseTimeFromText(instruction);
+              final hasTimer = duration != null;
 
               return TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
@@ -172,14 +223,24 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                       // Step indicator with line
                       Column(
                         children: [
+                          // Audio play/stop button as step indicator
                           GestureDetector(
-                            onTap: () => _toggleStep(index),
+                            onTap: () => _toggleTts(index, instruction),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
                               width: 40.w,
                               height: 40.h,
                               decoration: BoxDecoration(
-                                gradient: isCompleted
+                                gradient: isPlaying
+                                    ? LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Colors.orange,
+                                          Colors.orange.shade700,
+                                        ],
+                                      )
+                                    : isCompleted
                                     ? LinearGradient(
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
@@ -191,14 +252,16 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                                         ],
                                       )
                                     : null,
-                                color: isCompleted
+                                color: isPlaying || isCompleted
                                     ? null
                                     : isLocked
                                     ? colorScheme.surfaceContainerHighest
                                     : colorScheme.surfaceContainer,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: isCompleted
+                                  color: isPlaying
+                                      ? Colors.orange
+                                      : isCompleted
                                       ? colorScheme.primary
                                       : isNextStep
                                       ? colorScheme.primary.withValues(
@@ -207,9 +270,19 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                                       : colorScheme.outline.withValues(
                                           alpha: isLocked ? 0.3 : 1,
                                         ),
-                                  width: isNextStep ? 2.5 : 2,
+                                  width: isNextStep || isPlaying ? 2.5 : 2,
                                 ),
-                                boxShadow: isCompleted
+                                boxShadow: isPlaying
+                                    ? [
+                                        BoxShadow(
+                                          color: Colors.orange.withValues(
+                                            alpha: 0.4,
+                                          ),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : isCompleted
                                     ? [
                                         BoxShadow(
                                           color: colorScheme.primary.withValues(
@@ -234,7 +307,14 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                               child: Center(
                                 child: AnimatedSwitcher(
                                   duration: const Duration(milliseconds: 200),
-                                  child: isCompleted
+                                  child: isPlaying
+                                      ? Icon(
+                                          Icons.stop_rounded,
+                                          key: const ValueKey('stop'),
+                                          color: Colors.white,
+                                          size: AppSizes.iconSm,
+                                        )
+                                      : isCompleted
                                       ? Icon(
                                           Icons.check,
                                           key: const ValueKey('check'),
@@ -249,15 +329,13 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                                               .withValues(alpha: 0.5),
                                           size: 16.sp,
                                         )
-                                      : Text(
-                                          '${index + 1}',
-                                          key: ValueKey('num_$index'),
-                                          style: textTheme.titleSmall?.copyWith(
-                                            fontWeight: FontWeight.w700,
-                                            color: isNextStep
-                                                ? colorScheme.primary
-                                                : colorScheme.onSurfaceVariant,
-                                          ),
+                                      : Icon(
+                                          Icons.play_arrow_rounded,
+                                          key: ValueKey('play_$index'),
+                                          color: isNextStep
+                                              ? colorScheme.primary
+                                              : colorScheme.onSurfaceVariant,
+                                          size: AppSizes.iconSm,
                                         ),
                                 ),
                               ),
@@ -302,7 +380,9 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                             ),
                             padding: EdgeInsets.all(AppSizes.paddingMd),
                             decoration: BoxDecoration(
-                              color: isCompleted
+                              color: isPlaying
+                                  ? Colors.orange.withValues(alpha: 0.05)
+                                  : isCompleted
                                   ? colorScheme.primary.withValues(alpha: 0.05)
                                   : isLocked
                                   ? colorScheme.surfaceContainerHighest
@@ -312,7 +392,9 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                                 AppSizes.radiusLg,
                               ),
                               border: Border.all(
-                                color: isCompleted
+                                color: isPlaying
+                                    ? Colors.orange.withValues(alpha: 0.3)
+                                    : isCompleted
                                     ? colorScheme.primary.withValues(alpha: 0.3)
                                     : isNextStep
                                     ? colorScheme.primary.withValues(alpha: 0.3)
@@ -327,6 +409,77 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                // Step number badge
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 8.w,
+                                        vertical: 2.h,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isPlaying
+                                            ? Colors.orange.withValues(
+                                                alpha: 0.15,
+                                              )
+                                            : colorScheme.primary.withValues(
+                                                alpha: 0.1,
+                                              ),
+                                        borderRadius: BorderRadius.circular(
+                                          4.r,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'Step ${index + 1}',
+                                        style: textTheme.labelSmall?.copyWith(
+                                          color: isPlaying
+                                              ? Colors.orange
+                                              : colorScheme.primary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    if (hasTimer)
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 6.w,
+                                          vertical: 2.h,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            4.r,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.timer,
+                                              size: 12.sp,
+                                              color: Colors.blue,
+                                            ),
+                                            SizedBox(width: 4.w),
+                                            Text(
+                                              TimeParserUtils.formatDuration(
+                                                duration,
+                                              ),
+                                              style: textTheme.labelSmall
+                                                  ?.copyWith(
+                                                    color: Colors.blue,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                SizedBox(height: 8.h),
+                                // Instruction text
                                 AnimatedDefaultTextStyle(
                                   duration: const Duration(milliseconds: 200),
                                   style: textTheme.bodyMedium!.copyWith(
@@ -346,6 +499,9 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                                   ),
                                   child: Text(instruction),
                                 ),
+                                // Timer widget for instructions with time
+                                if (hasTimer)
+                                  InstructionTimerWidget(duration: duration),
                               ],
                             ),
                           ),

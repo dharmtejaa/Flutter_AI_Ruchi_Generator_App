@@ -10,6 +10,7 @@ class RecipeProvider with ChangeNotifier {
   String _selectedProvider = 'openai';
   String _selectedCuisine = 'none';
   String _selectedDietary = 'none';
+  int _selectedServings = 4;
 
   Recipe? get recipe => _recipe;
   bool get isLoading => _isLoading;
@@ -17,6 +18,7 @@ class RecipeProvider with ChangeNotifier {
   String get selectedProvider => _selectedProvider;
   String get selectedCuisine => _selectedCuisine;
   String get selectedDietary => _selectedDietary;
+  int get selectedServings => _selectedServings;
 
   // Available options
   static const List<String> providers = ['openai', 'gemini'];
@@ -43,6 +45,20 @@ class RecipeProvider with ChangeNotifier {
     'low-carb',
     'high-protein',
   ];
+  static const List<int> servingsOptions = [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    10,
+    12,
+    15,
+    20,
+  ];
 
   void setProvider(String provider) {
     _selectedProvider = provider;
@@ -59,6 +75,11 @@ class RecipeProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void setServings(int servings) {
+    _selectedServings = servings.clamp(1, 20);
+    notifyListeners();
+  }
+
   Future<void> generateRecipe(List<Ingredient> ingredients) async {
     _isLoading = true;
     _error = null;
@@ -70,6 +91,7 @@ class RecipeProvider with ChangeNotifier {
         provider: _selectedProvider,
         cuisine: _selectedCuisine,
         dietary: _selectedDietary,
+        servings: _selectedServings,
       );
 
       _recipe = generatedRecipe;
@@ -101,6 +123,7 @@ class RecipeProvider with ChangeNotifier {
     _selectedProvider = 'openai';
     _selectedCuisine = 'none';
     _selectedDietary = 'none';
+    _selectedServings = 4;
     notifyListeners();
   }
 }

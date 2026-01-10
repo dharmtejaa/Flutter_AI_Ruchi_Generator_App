@@ -131,6 +131,7 @@ class ScanScreenState extends State<ScanScreen> {
       final preferences = RecipePreferences(
         cuisine: recipeProvider.selectedCuisine,
         dietary: recipeProvider.selectedDietary,
+        servings: recipeProvider.selectedServings,
       );
 
       final response = await ImageRecipeApiService.generateRecipeFromImage(

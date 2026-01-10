@@ -196,6 +196,38 @@ class _RecipePreferencesBottomSheetState
                       ),
 
                       SizedBox(height: AppSizes.spaceHeightMd),
+
+                      // Servings Selection
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionHeader(
+                            context,
+                            'Number of Servings',
+                            Icons.people_rounded,
+                          ),
+                          SizedBox(height: AppSizes.spaceHeightXs),
+                          Wrap(
+                            spacing: 8.w,
+                            runSpacing: 10.h,
+                            children: RecipeProvider.servingsOptions.map((
+                              servings,
+                            ) {
+                              final isSelected =
+                                  recipeProvider.selectedServings == servings;
+                              return _PreferenceChip(
+                                label: '$servings',
+                                isSelected: isSelected,
+                                onTap: () =>
+                                    recipeProvider.setServings(servings),
+                                icon: Icons.person,
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: AppSizes.spaceHeightMd),
                     ],
                   ),
                 ),

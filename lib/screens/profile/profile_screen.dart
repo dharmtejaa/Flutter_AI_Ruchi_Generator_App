@@ -1,5 +1,6 @@
 import 'package:ai_ruchi/core/services/tutorial_service.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
+import 'package:ai_ruchi/providers/app_settings_provider.dart';
 import 'package:ai_ruchi/providers/theme_provider.dart';
 import 'package:ai_ruchi/shared/widgets/common/custom_snackbar.dart';
 import 'package:flutter/material.dart';
@@ -113,6 +114,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
                 ],
+              ),
+              SizedBox(height: 16.h),
+
+              // Feature Settings Section
+              _buildSectionHeader(context, 'Feature Settings'),
+              SizedBox(height: 8.h),
+              Consumer<AppSettingsProvider>(
+                builder: (context, appSettings, child) {
+                  return _buildSettingsCard(
+                    context,
+                    children: [
+                      _buildSettingsTile(
+                        context,
+                        icon: Icons.record_voice_over_outlined,
+                        title: 'Text-to-Speech',
+                        trailing: Switch(
+                          value: appSettings.ttsEnabled,
+                          onChanged: (value) =>
+                              appSettings.setTtsEnabled(value),
+                          activeTrackColor: colorScheme.primary,
+                          thumbColor: WidgetStateProperty.resolveWith((states) {
+                            if (states.contains(WidgetState.selected)) {
+                              return colorScheme.onPrimary;
+                            }
+                            return null;
+                          }),
+                        ),
+                        showChevron: false,
+                      ),
+                      _buildDivider(context),
+                      _buildSettingsTile(
+                        context,
+                        icon: Icons.vibration,
+                        title: 'Shake to Scan',
+                        trailing: Switch(
+                          value: appSettings.shakeToScanEnabled,
+                          onChanged: (value) =>
+                              appSettings.setShakeToScanEnabled(value),
+                          activeTrackColor: colorScheme.primary,
+                          thumbColor: WidgetStateProperty.resolveWith((states) {
+                            if (states.contains(WidgetState.selected)) {
+                              return colorScheme.onPrimary;
+                            }
+                            return null;
+                          }),
+                        ),
+                        showChevron: false,
+                      ),
+                      _buildDivider(context),
+                      _buildSettingsTile(
+                        context,
+                        icon: Icons.speed,
+                        title: 'Speech Speed',
+                        trailing: Text(
+                          '${(appSettings.ttsSpeed * 2).toStringAsFixed(1)}x',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        onTap: () => _showSpeedSelector(context, appSettings),
+                      ),
+                    ],
+                  );
+                },
               ),
               SizedBox(height: 16.h),
 
@@ -342,6 +407,88 @@ class _ProfileScreenState extends State<ProfileScreen> {
       default:
         return ThemeMode.system;
     }
+  }
+
+  void _showSpeedSelector(
+    BuildContext context,
+    AppSettingsProvider appSettings,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.all(AppSizes.paddingLg),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Drag Handle
+                    Container(
+                      width: 40.w,
+                      height: 4.h,
+                      decoration: BoxDecoration(
+                        color: colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.3,
+                        ),
+                        borderRadius: BorderRadius.circular(2.r),
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+                    Text('Speech Speed', style: textTheme.titleLarge),
+                    SizedBox(height: 24.h),
+                    // Speed slider
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.slow_motion_video,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        Expanded(
+                          child: Slider(
+                            value: appSettings.ttsSpeed,
+                            min: 0.25,
+                            max: 1.0,
+                            divisions: 6,
+                            label:
+                                '${(appSettings.ttsSpeed * 2).toStringAsFixed(1)}x',
+                            onChanged: (value) {
+                              setSheetState(() {});
+                              appSettings.setTtsSpeed(value);
+                            },
+                          ),
+                        ),
+                        Icon(
+                          Icons.fast_forward,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      '${(appSettings.ttsSpeed * 2).toStringAsFixed(1)}x speed',
+                      style: textTheme.bodyLarge?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _showThemeSelector(BuildContext context) {

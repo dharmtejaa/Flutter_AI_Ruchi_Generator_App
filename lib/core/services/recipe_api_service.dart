@@ -13,11 +13,13 @@ class RecipeApiService {
   /// [provider] - Model provider: 'openai' or 'gemini'
   /// [cuisine] - Cuisine type (e.g., 'Italian', 'Indian', etc.)
   /// [dietary] - Dietary preference (e.g., 'none', 'vegetarian', 'vegan', etc.)
+  /// [servings] - Number of servings (1-20)
   static Future<Recipe> generateRecipe({
     required List<Ingredient> ingredients,
     required String provider,
     required String cuisine,
     required String dietary,
+    int servings = 4,
   }) async {
     try {
       // Optimize ingredients: combine name, amount, and unit into string format
@@ -28,7 +30,11 @@ class RecipeApiService {
       final requestBody = {
         'ingredients': ingredientsList,
         'provider': provider,
-        'preferences': {'cuisine': cuisine, 'dietary': dietary},
+        'preferences': {
+          'cuisine': cuisine,
+          'dietary': dietary,
+          'servings': servings,
+        },
       };
 
       final response = await http.post(
@@ -54,4 +60,3 @@ class RecipeApiService {
     }
   }
 }
-

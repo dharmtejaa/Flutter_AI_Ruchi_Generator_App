@@ -1,3 +1,5 @@
+import 'package:ai_ruchi/core/services/shake_detector_service.dart';
+import 'package:ai_ruchi/providers/app_settings_provider.dart';
 import 'package:ai_ruchi/providers/ingredients_provider.dart';
 import 'package:ai_ruchi/screens/entry/entry_screen.dart';
 import 'package:ai_ruchi/screens/profile/profile_screen.dart';
@@ -21,6 +23,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
   bool _isTapNavigation = false;
   late PageController _pageController;
   DateTime? _lastBackPressTime;
+
+  /// Shake detector service for shake-to-scan feature
+  final ShakeDetectorService _shakeDetector = ShakeDetectorService();
 
   /// GlobalKey for EntryScreen to call showPreferencesSheet() method
   final GlobalKey<EntryScreenState> _entryScreenKey =
@@ -52,11 +57,52 @@ class _MainShellScreenState extends State<MainShellScreen> {
       const SavedRecipesScreen(),
       const ProfileScreen(),
     ];
+
+    // Start shake detection after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initShakeDetection();
+    });
+  }
+
+  void _initShakeDetection() {
+    final appSettings = context.read<AppSettingsProvider>();
+    if (appSettings.shakeToScanEnabled) {
+      _shakeDetector.startListening(onShake: _handleShake);
+    }
+
+    // Listen for settings changes to start/stop shake detection
+    appSettings.addListener(_onSettingsChanged);
+  }
+
+  void _onSettingsChanged() {
+    final appSettings = context.read<AppSettingsProvider>();
+    if (appSettings.shakeToScanEnabled && !_shakeDetector.isListening) {
+      _shakeDetector.startListening(onShake: _handleShake);
+    } else if (!appSettings.shakeToScanEnabled && _shakeDetector.isListening) {
+      _shakeDetector.stopListening();
+    }
+  }
+
+  void _handleShake() {
+    // Shake-to-scan only works on: Entry (0), Scan (1), Saved (2), Profile/Settings (3)
+    // These are all the main shell screens where shake should trigger scan
+    if (_currentIndex >= 0 && _currentIndex <= 3) {
+      // Navigate to Scan tab and open camera
+      if (_currentIndex != 1) {
+        _onNavTap(1);
+      }
+      // Small delay to ensure the page is loaded
+      Future.delayed(const Duration(milliseconds: 200), () {
+        _scanScreenKey.currentState?.openCamera();
+      });
+      HapticService.mediumImpact();
+    }
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _shakeDetector.dispose();
     super.dispose();
   }
 
