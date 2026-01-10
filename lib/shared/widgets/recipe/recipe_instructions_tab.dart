@@ -1,4 +1,5 @@
 import 'package:ai_ruchi/core/services/tts_service.dart';
+import 'package:ai_ruchi/core/services/speech_service.dart';
 import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/core/utils/time_parser_utils.dart';
@@ -27,6 +28,8 @@ class RecipeInstructionsTab extends StatefulWidget {
 
 class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
   final TtsService _ttsService = TtsService();
+  final SpeechService _speechService = SpeechService();
+  bool _isListening = false;
 
   @override
   void initState() {
@@ -44,26 +47,171 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
         if (playingIndex != null) {
           // Mark current step as completed
           recipeProvider.markStepCompleted(playingIndex);
-
-          // Check if there's a next step to auto-play
-          final nextIndex = playingIndex + 1;
-          if (nextIndex < widget.recipe.instructions.length) {
-            // Auto-play next instruction
-            recipeProvider.setCurrentlyPlayingIndex(nextIndex);
-            _ttsService.speak(widget.recipe.instructions[nextIndex]);
-          } else {
-            // No more steps, clear playing index
-            recipeProvider.setCurrentlyPlayingIndex(null);
-          }
+          // Clear playing index - do NOT auto-play next
+          recipeProvider.setCurrentlyPlayingIndex(null);
         }
       }
     };
+
+    // Initialize speech service with status listeners
+    await _speechService.initialize(
+      onStatus: (status) {
+        if (mounted) {
+          // Sync UI state with actual speech status
+          if (status == 'notListening' || status == 'done') {
+            // Continuous Listening Logic:
+            // If explicit stop wasn't requested (we track this via internal flag?
+            // actually _isListening is our flag for "user wants listening on").
+            // So if _isListening is true, but status says done, we restart.
+
+            if (_isListening) {
+              // Restart listening immediately
+              _speechService.startListening(
+                onResult: (text) => _handleVoiceCommand(text),
+              );
+            } else {
+              // Truly stopped
+              setState(() => _isListening = false);
+            }
+          } else if (status == 'listening') {
+            setState(() => _isListening = true);
+          }
+        }
+      },
+      onError: (errorStat) {
+        if (mounted) {
+          // If error is permanent, maybe stop.
+          // But generally for continuous listening we might want to retry?
+          // For now, let's stop on error to prevent infinite error loops.
+          setState(() => _isListening = false);
+        }
+      },
+    );
   }
 
   @override
   void dispose() {
     _ttsService.stop();
+    _speechService.stopListening();
     super.dispose();
+  }
+
+  void _toggleListening() async {
+    if (_isListening) {
+      // User explicitly wants to stop
+      setState(
+        () => _isListening = false,
+      ); // Update flag first so we don't auto-restart
+      await _speechService.stopListening();
+    } else {
+      setState(() => _isListening = true);
+      await _speechService.startListening(
+        onResult: (text) {
+          _handleVoiceCommand(text);
+          // With continuous listening, we don't stop here.
+        },
+      );
+    }
+  }
+
+  void _handleVoiceCommand(String text) {
+    if (!mounted) return;
+    debugPrint('Voice command: $text');
+    final command = text.toLowerCase();
+
+    final recipeProvider = context.read<RecipeProvider>();
+    final instructions = widget.recipe.instructions;
+
+    // --- Timer Commands ---
+    if (command.contains('timer')) {
+      int? stepTarget;
+      // Try to infer step from context (currently playing or just general)
+      // If "step X timer", we could parse that.
+      // For now, let's dispatch globally (stepIndex: null) or to currently playing.
+      // Actually, if we pass currentlyPlayingIndex, the timer widget for that step needs to match it.
+      // But commonly the user is looking at the screen or listening to a step.
+      // If audio is playing, use that index.
+      // If not, use next incomplete? Or we can broadcast without index and let active/visible timers decide?
+      // Our Widget logic checks: if (event.stepIndex != null && event.stepIndex != widget.stepIndex) return;
+      // So if we send null, ALL timers receive it.
+      // Do we want "Start timer" to start ALL timers? Probably not.
+      // But usually only one is active/relevant.
+      // Let's refine: If "Start Timer" -> Start timer for the *current step* being read.
+
+      stepTarget = recipeProvider.currentlyPlayingIndex;
+      // If nothing playing, maybe the first incomplete step?
+      stepTarget ??= _getNextIncompleteStep();
+
+      if (command.contains('start') || command.contains('begin')) {
+        recipeProvider.dispatchTimerCommand(
+          TimerAction.start,
+          stepIndex: stepTarget,
+        );
+        return;
+      }
+      if (command.contains('stop') || command.contains('pause')) {
+        recipeProvider.dispatchTimerCommand(
+          TimerAction.pause,
+          stepIndex: stepTarget,
+        );
+        // Note: Stop usually means pause for timers. Reset is separate.
+        return;
+      }
+      if (command.contains('reset') || command.contains('restart')) {
+        recipeProvider.dispatchTimerCommand(
+          TimerAction.reset,
+          stepIndex: stepTarget,
+        );
+        return;
+      }
+    }
+
+    // "Stop" / "Pause" (TTS)
+    // Only if NOT timer command (checked above)
+    if (command.contains('stop') ||
+        command.contains('pause') ||
+        command.contains('quiet')) {
+      _ttsService.stop();
+      recipeProvider.setCurrentlyPlayingIndex(null);
+      return;
+    }
+
+    // "Next"
+    if (command.contains('next')) {
+      int nextIndex = _getNextIncompleteStep();
+      // If currently playing, go to next relative to that
+      if (recipeProvider.currentlyPlayingIndex != null) {
+        nextIndex = recipeProvider.currentlyPlayingIndex! + 1;
+      }
+
+      if (nextIndex < instructions.length && nextIndex >= 0) {
+        _toggleTts(nextIndex, instructions[nextIndex]);
+      }
+      return;
+    }
+
+    // "Step X" parsing
+    // Regex to find "step" followed by a number
+    final stepMatch = RegExp(r'step\s+(\d+)').firstMatch(command);
+    if (stepMatch != null) {
+      final stepNum = int.tryParse(stepMatch.group(1) ?? '');
+      if (stepNum != null && stepNum > 0 && stepNum <= instructions.length) {
+        final index = stepNum - 1;
+        _toggleTts(index, instructions[index]);
+        return;
+      }
+    }
+
+    // "Play" (plays current incomplete step)
+    if (command.contains('play') ||
+        command.contains('start') ||
+        command.contains('read')) {
+      final index = _getNextIncompleteStep();
+      if (index < instructions.length) {
+        _toggleTts(index, instructions[index]);
+      }
+      return;
+    }
   }
 
   /// Check if a step can be toggled (must be sequential)
@@ -115,15 +263,8 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
     final completedSteps = recipeProvider.completedSteps;
     final currentlyPlayingIndex = recipeProvider.currentlyPlayingIndex;
 
-    // Check if step is already completed - don't allow replay
+    // Check if step is already completed - silently ignore (no toast)
     if (completedSteps.contains(index)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('This step is already completed'),
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
       return;
     }
 
@@ -194,6 +335,35 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                   style: textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: colorScheme.primary,
+                  ),
+                ),
+                const Spacer(),
+                // Voice Command Toggle
+                GestureDetector(
+                  onTap: _toggleListening,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    padding: EdgeInsets.all(8.w),
+                    decoration: BoxDecoration(
+                      color: _isListening
+                          ? Colors.red.withValues(alpha: 0.1)
+                          : Colors.transparent,
+                      shape: BoxShape.circle,
+                      border: _isListening
+                          ? Border.all(color: Colors.red, width: 1.5)
+                          : null,
+                    ),
+                    child: _isListening
+                        ? Icon(
+                            Icons.mic_rounded,
+                            color: Colors.red,
+                            size: 20.sp,
+                          )
+                        : Icon(
+                            Icons.mic_none_rounded,
+                            color: colorScheme.primary.withValues(alpha: 0.7),
+                            size: 20.sp,
+                          ),
                   ),
                 ),
                 const Spacer(),
@@ -542,9 +712,12 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                                   ),
                                   child: Text(instruction),
                                 ),
-                                // Timer widget for instructions with time (only for unlocked steps)
-                                if (hasTimer && !isLocked)
-                                  InstructionTimerWidget(duration: duration),
+                                // Timer widget for instructions with time (only for unlocked and incomplete steps)
+                                if (hasTimer && !isLocked && !isCompleted)
+                                  InstructionTimerWidget(
+                                    duration: duration,
+                                    stepIndex: index,
+                                  ),
                               ],
                             ),
                           ),

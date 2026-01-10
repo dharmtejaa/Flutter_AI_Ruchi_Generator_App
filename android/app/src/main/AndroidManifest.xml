@@ -3,6 +3,11 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Required for accessing the device vibrator hardware directly -->
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <!-- Required for Voice Commands -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
     <application
         android:label="ai_ruchi"
         android:name="${applicationName}"
@@ -35,6 +40,10 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- AdMob App ID (Test ID: ca-app-pub-3940256099942544~3347511713) -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

@@ -15,7 +15,7 @@ class AppSettingsProvider with ChangeNotifier {
   double _ttsSpeed = 0.4; // Default 0.8x speed
   double _ttsPitch = 1.0;
   String? _ttsVoice;
-  int _defaultServings = 4;
+  int _defaultServings = 1;
 
   bool _isLoading = true;
 

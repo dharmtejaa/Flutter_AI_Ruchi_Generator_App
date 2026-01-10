@@ -339,7 +339,7 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
           // Edit Ingredients FAB
           FloatingActionButton.small(
             heroTag: 'edit_fab',
-            onPressed: () => context.push('/adjust-ingredients'),
+            onPressed: () => context.push('/adjust'),
             backgroundColor: colorScheme.surfaceContainerHighest,
             foregroundColor: colorScheme.primary,
             elevation: 2,

@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:ai_ruchi/core/services/ad_service.dart';
 import 'package:ai_ruchi/providers/ingredients_provider.dart';
 import 'package:ai_ruchi/providers/recipe_provider.dart';
 import 'package:ai_ruchi/shared/widgets/common/custom_snackbar.dart';
@@ -76,8 +78,15 @@ class RecipeHelper {
       );
     }
 
-    // Generate recipe
-    await recipeProvider.generateRecipe(ingredientsProvider.currentIngredients);
+    // Run Ad and API generation concurrently
+    // This ensures the ad "covers" the loading time
+    final adFuture = AdService().showInterstitialAd();
+    final recipeFuture = recipeProvider.generateRecipe(
+      ingredientsProvider.currentIngredients,
+    );
+
+    // Wait for BOTH to complete (Ad closed + API finished)
+    await Future.wait([adFuture, recipeFuture]);
 
     if (!context.mounted) return false;
 
@@ -98,6 +107,7 @@ class RecipeHelper {
           return false;
         }
       }
+
       return true;
     } else {
       CustomSnackBar.showError(

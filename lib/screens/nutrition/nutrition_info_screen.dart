@@ -1,4 +1,6 @@
 import 'dart:math' as math;
+import 'dart:async';
+import 'package:ai_ruchi/core/services/ad_service.dart';
 import 'package:ai_ruchi/core/services/recipe_api_service.dart';
 import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
@@ -45,12 +47,19 @@ class _NutritionInfoScreenState extends State<NutritionInfoScreen> {
     });
 
     try {
-      final recipe = await RecipeApiService.generateRecipe(
+      // Start Ad and API fetch concurrently
+      // This covers the loading time with the ad
+      final adFuture = AdService().showInterstitialAd();
+      final recipeFuture = RecipeApiService.generateRecipe(
         ingredients: ingredients,
         provider: recipeProvider.selectedProvider,
         cuisine: recipeProvider.selectedCuisine,
         dietary: recipeProvider.selectedDietary,
       );
+
+      // Wait for both results
+      final results = await Future.wait([adFuture, recipeFuture]);
+      final recipe = results[1] as Recipe; // Get recipe from 2nd future
 
       if (mounted) {
         setState(() {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:ai_ruchi/models/recipe.dart';
 import 'package:ai_ruchi/core/services/recipe_api_service.dart';
@@ -10,7 +11,7 @@ class RecipeProvider with ChangeNotifier {
   String _selectedProvider = 'openai';
   String _selectedCuisine = 'none';
   String _selectedDietary = 'none';
-  int _selectedServings = 4;
+  int _selectedServings = 1;
 
   // Instruction state (preserved across tab switches)
   final Set<int> _completedSteps = {};
@@ -91,7 +92,8 @@ class RecipeProvider with ChangeNotifier {
   // Instruction state management
   void toggleStepCompletion(int index) {
     if (_completedSteps.contains(index)) {
-      _completedSteps.remove(index);
+      // When uncompleting, also uncomplete all steps after this one (lock them)
+      _completedSteps.removeWhere((step) => step >= index);
     } else {
       _completedSteps.add(index);
     }
@@ -167,7 +169,33 @@ class RecipeProvider with ChangeNotifier {
     _selectedProvider = 'openai';
     _selectedCuisine = 'none';
     _selectedDietary = 'none';
-    _selectedServings = 4;
+    _selectedServings = 1;
     notifyListeners();
   }
+
+  // Timer Command Stream
+  // stepIndex: null means "current playing or active"
+  final _timerCommandController = StreamController<TimerEvent>.broadcast();
+  Stream<TimerEvent> get timerCommandStream => _timerCommandController.stream;
+
+  void dispatchTimerCommand(TimerAction action, {int? stepIndex}) {
+    _timerCommandController.add(
+      TimerEvent(action: action, stepIndex: stepIndex),
+    );
+  }
+
+  @override
+  void dispose() {
+    _timerCommandController.close();
+    super.dispose();
+  }
+}
+
+enum TimerAction { start, pause, reset }
+
+class TimerEvent {
+  final TimerAction action;
+  final int? stepIndex;
+
+  TimerEvent({required this.action, this.stepIndex});
 }

@@ -1,6 +1,7 @@
 import 'package:ai_ruchi/core/utils/recipe_helper.dart';
 import 'package:ai_ruchi/shared/widgets/common/custom_snackbar.dart';
 import 'package:ai_ruchi/shared/widgets/recipe/recipe_loading_screen.dart';
+import 'package:ai_ruchi/core/services/ad_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -17,6 +18,9 @@ class _RecipeGenerationLoadingScreenState
   @override
   void initState() {
     super.initState();
+    // Load interstitial ad early
+    AdService().loadInterstitialAd();
+
     // Start generation after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _generateRecipe();
@@ -36,8 +40,12 @@ class _RecipeGenerationLoadingScreenState
       if (!mounted) return;
 
       if (success) {
-        // Navigate to recipe result
-        context.pushReplacement('/recipe');
+        // Show ad before navigating
+        // Show ad before navigating
+        await AdService().showInterstitialAd();
+        if (mounted) {
+          context.pushReplacement('/recipe');
+        }
       } else {
         // Go back to entry screen if cancelled or failed
         if (context.canPop()) {

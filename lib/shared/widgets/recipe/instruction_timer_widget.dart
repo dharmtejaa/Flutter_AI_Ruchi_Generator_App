@@ -1,20 +1,26 @@
 import 'dart:async';
 import 'package:ai_ruchi/core/services/haptic_service.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
+import 'package:vibration/vibration.dart';
 import 'package:ai_ruchi/core/utils/time_parser_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:provider/provider.dart';
+import 'package:ai_ruchi/providers/recipe_provider.dart';
 
 /// Inline timer widget for recipe instructions with time mentions
 class InstructionTimerWidget extends StatefulWidget {
   final Duration duration;
   final VoidCallback? onComplete;
+  final int? stepIndex;
 
   const InstructionTimerWidget({
     super.key,
     required this.duration,
     this.onComplete,
+    this.stepIndex,
   });
 
   @override
@@ -24,18 +30,70 @@ class InstructionTimerWidget extends StatefulWidget {
 class _InstructionTimerWidgetState extends State<InstructionTimerWidget> {
   Timer? _timer;
   late Duration _remainingTime;
+  late AudioPlayer _audioPlayer;
   bool _isRunning = false;
   bool _isComplete = false;
+
+  StreamSubscription<TimerEvent>? _timerSubscription;
 
   @override
   void initState() {
     super.initState();
     _remainingTime = widget.duration;
+    _audioPlayer = AudioPlayer();
+
+    // Listen for voice commands
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<RecipeProvider>();
+      _timerSubscription = provider.timerCommandStream.listen((event) {
+        // If event targets specific step, check index.
+        // If no index provided, check if we are the "current" meaningful timer?
+        // Simpler: Check if we are the currently playing step or next incomplete.
+        // For now, let's assume the parent passes us OUR index?
+        // Widget doesn't have index props yet.
+        // We need to add `index` to InstructionTimerWidget constructor first.
+
+        // Wait, I missed adding `index` to the widget in the plan.
+        // I'll assume valid if:
+        // 1. Explicit index matches
+        // 2. Or if index is null (global command), and this is the "active" timer.
+        // What defines active? Maybe if it's visible?
+        // Let's rely on the parent (instructions tab) to only dispatch if it matches?
+        // No, stream is broadcast.
+
+        // Let's refactor InstructionTimerWidget to accept `index` in separate step if needed.
+        // For now, I will modify the constructor here too.
+
+        _handleTimerEvent(event);
+      });
+    });
+  }
+
+  void _handleTimerEvent(TimerEvent event) {
+    if (event.stepIndex != null && event.stepIndex != widget.stepIndex) {
+      return;
+    }
+    // If stepIndex is null, maybe applying to all? Or none?
+    // Let's assume voice commands will try to find the "active" step index.
+
+    switch (event.action) {
+      case TimerAction.start:
+        if (!_isRunning && !_isComplete) _startTimer();
+        break;
+      case TimerAction.pause:
+        if (_isRunning) _pauseTimer();
+        break;
+      case TimerAction.reset:
+        _resetTimer();
+        break;
+    }
   }
 
   @override
   void dispose() {
+    _timerSubscription?.cancel();
     _timer?.cancel();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -64,17 +122,22 @@ class _InstructionTimerWidgetState extends State<InstructionTimerWidget> {
   }
 
   /// Play beep-like feedback on timer completion
-  void _playCompletionBeep() {
+  void _playCompletionBeep() async {
     // Multiple short vibrations to simulate beep pattern
     HapticService.heavyImpact();
-    Future.delayed(const Duration(milliseconds: 200), () {
-      HapticService.heavyImpact();
-    });
-    Future.delayed(const Duration(milliseconds: 400), () {
-      HapticService.heavyImpact();
-    });
-    // Also play system sound
-    SystemSound.play(SystemSoundType.alert);
+    await SystemSound.play(SystemSoundType.alert);
+
+    // Play custom beep sound with audioplayers
+    try {
+      await _audioPlayer.play(AssetSource('sounds/beep.mp3'));
+    } catch (e) {
+      debugPrint('Error playing beep sound: $e');
+    }
+
+    // Vibrate pattern
+    if (await Vibration.hasVibrator()) {
+      Vibration.vibrate(pattern: [0, 500, 200, 500]);
+    }
   }
 
   void _pauseTimer() {

@@ -1,3 +1,4 @@
+import 'package:ai_ruchi/core/services/ad_service.dart';
 import 'package:ai_ruchi/core/utils/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +14,9 @@ import 'providers/saved_recipes_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Mobile Ads
+  await AdService().initialize();
 
   // Initialize SharedPreferences and check onboarding status
   final prefs = await SharedPreferences.getInstance();
