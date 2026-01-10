@@ -9,6 +9,7 @@ import 'package:ai_ruchi/core/services/haptic_service.dart';
 import 'package:ai_ruchi/shared/widgets/navigation/app_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 class MainShellScreen extends StatefulWidget {
@@ -26,6 +27,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   /// Shake detector service for shake-to-scan feature
   final ShakeDetectorService _shakeDetector = ShakeDetectorService();
+
+  /// Image picker for direct camera access on shake
+  final ImagePicker _imagePicker = ImagePicker();
 
   /// GlobalKey for EntryScreen to call showPreferencesSheet() method
   final GlobalKey<EntryScreenState> _entryScreenKey =
@@ -83,19 +87,24 @@ class _MainShellScreenState extends State<MainShellScreen> {
     }
   }
 
-  void _handleShake() {
-    // Shake-to-scan only works on: Entry (0), Scan (1), Saved (2), Profile/Settings (3)
-    // These are all the main shell screens where shake should trigger scan
-    if (_currentIndex >= 0 && _currentIndex <= 3) {
-      // Navigate to Scan tab and open camera
-      if (_currentIndex != 1) {
-        _onNavTap(1);
-      }
-      // Small delay to ensure the page is loaded
-      Future.delayed(const Duration(milliseconds: 200), () {
-        _scanScreenKey.currentState?.openCamera();
-      });
+  void _handleShake() async {
+    // Shake-to-scan only works on Scan screen (index 1)
+    if (_currentIndex == 1) {
       HapticService.mediumImpact();
+
+      // Open camera directly using ImagePicker on scan screen
+      try {
+        final XFile? image = await _imagePicker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 85,
+        );
+
+        if (image != null && mounted) {
+          _scanScreenKey.currentState?.setImageFromShake(image.path);
+        }
+      } catch (e) {
+        // Camera cancelled or error - do nothing
+      }
     }
   }
 

@@ -77,6 +77,14 @@ class ScanScreenState extends State<ScanScreen> {
     });
   }
 
+  /// Set image from shake gesture (called from MainShellScreen)
+  void setImageFromShake(String imagePath) {
+    setState(() {
+      _selectedImage = File(imagePath);
+      _extractedIngredients = null;
+    });
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? image = await _picker.pickImage(

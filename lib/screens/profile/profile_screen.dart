@@ -15,8 +15,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool _syncToCloud = true;
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -125,42 +123,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   return _buildSettingsCard(
                     context,
                     children: [
-                      _buildSettingsTile(
+                      _buildCompactSettingsTile(
                         context,
                         icon: Icons.record_voice_over_outlined,
                         title: 'Text-to-Speech',
-                        trailing: Switch(
-                          value: appSettings.ttsEnabled,
-                          onChanged: (value) =>
-                              appSettings.setTtsEnabled(value),
-                          activeTrackColor: colorScheme.primary,
-                          thumbColor: WidgetStateProperty.resolveWith((states) {
-                            if (states.contains(WidgetState.selected)) {
-                              return colorScheme.onPrimary;
-                            }
-                            return null;
-                          }),
-                        ),
-                        showChevron: false,
+                        value: appSettings.ttsEnabled,
+                        onChanged: (value) => appSettings.setTtsEnabled(value),
                       ),
                       _buildDivider(context),
-                      _buildSettingsTile(
+                      _buildCompactSettingsTile(
                         context,
                         icon: Icons.vibration,
                         title: 'Shake to Scan',
-                        trailing: Switch(
-                          value: appSettings.shakeToScanEnabled,
-                          onChanged: (value) =>
-                              appSettings.setShakeToScanEnabled(value),
-                          activeTrackColor: colorScheme.primary,
-                          thumbColor: WidgetStateProperty.resolveWith((states) {
-                            if (states.contains(WidgetState.selected)) {
-                              return colorScheme.onPrimary;
-                            }
-                            return null;
-                          }),
-                        ),
-                        showChevron: false,
+                        value: appSettings.shakeToScanEnabled,
+                        onChanged: (value) =>
+                            appSettings.setShakeToScanEnabled(value),
                       ),
                       _buildDivider(context),
                       _buildSettingsTile(
@@ -187,26 +164,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildSettingsCard(
                 context,
                 children: [
-                  _buildSettingsTile(
-                    context,
-                    icon: Icons.cloud_sync_outlined,
-                    title: 'Sync to Cloud',
-                    trailing: Switch(
-                      value: _syncToCloud,
-                      onChanged: (value) {
-                        setState(() => _syncToCloud = value);
-                      },
-                      activeTrackColor: colorScheme.primary,
-                      thumbColor: WidgetStateProperty.resolveWith((states) {
-                        if (states.contains(WidgetState.selected)) {
-                          return colorScheme.onPrimary;
-                        }
-                        return null;
-                      }),
-                    ),
-                    showChevron: false,
-                  ),
-                  _buildDivider(context),
                   _buildSettingsTile(
                     context,
                     icon: Icons.picture_as_pdf_outlined,
@@ -362,6 +319,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Compact settings tile with smaller switch for toggle options
+  Widget _buildCompactSettingsTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+      child: Row(
+        children: [
+          Icon(icon, size: 22.sp, color: colorScheme.onSurfaceVariant),
+          SizedBox(width: 14.w),
+          Expanded(
+            child: Text(
+              title,
+              style: textTheme.bodyLarge?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+          Transform.scale(
+            scale: 0.8,
+            child: Switch(
+              value: value,
+              onChanged: onChanged,
+              activeTrackColor: colorScheme.primary,
+              thumbColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return colorScheme.onPrimary;
+                }
+                return null;
+              }),
+            ),
+          ),
+        ],
       ),
     );
   }

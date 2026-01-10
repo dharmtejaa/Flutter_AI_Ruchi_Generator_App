@@ -3,9 +3,11 @@ import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/core/utils/time_parser_utils.dart';
 import 'package:ai_ruchi/models/recipe.dart';
+import 'package:ai_ruchi/providers/recipe_provider.dart';
 import 'package:ai_ruchi/shared/widgets/recipe/instruction_timer_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 class RecipeInstructionsTab extends StatefulWidget {
   final Recipe recipe;
@@ -24,9 +26,7 @@ class RecipeInstructionsTab extends StatefulWidget {
 }
 
 class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
-  final Set<int> _completedSteps = {};
   final TtsService _ttsService = TtsService();
-  int? _currentlyPlayingIndex;
 
   @override
   void initState() {
@@ -38,9 +38,24 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
     await _ttsService.initialize();
     _ttsService.onComplete = (_) {
       if (mounted) {
-        setState(() {
-          _currentlyPlayingIndex = null;
-        });
+        final recipeProvider = context.read<RecipeProvider>();
+        final playingIndex = recipeProvider.currentlyPlayingIndex;
+
+        if (playingIndex != null) {
+          // Mark current step as completed
+          recipeProvider.markStepCompleted(playingIndex);
+
+          // Check if there's a next step to auto-play
+          final nextIndex = playingIndex + 1;
+          if (nextIndex < widget.recipe.instructions.length) {
+            // Auto-play next instruction
+            recipeProvider.setCurrentlyPlayingIndex(nextIndex);
+            _ttsService.speak(widget.recipe.instructions[nextIndex]);
+          } else {
+            // No more steps, clear playing index
+            recipeProvider.setCurrentlyPlayingIndex(null);
+          }
+        }
       }
     };
   }
@@ -53,13 +68,14 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
 
   /// Check if a step can be toggled (must be sequential)
   bool _canToggleStep(int index) {
+    final completedSteps = context.read<RecipeProvider>().completedSteps;
     // Can always toggle if it's currently completed (to uncomplete)
-    if (_completedSteps.contains(index)) {
+    if (completedSteps.contains(index)) {
       return true;
     }
     // Can only complete if all previous steps are completed
     for (int i = 0; i < index; i++) {
-      if (!_completedSteps.contains(i)) {
+      if (!completedSteps.contains(i)) {
         return false;
       }
     }
@@ -67,6 +83,7 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
   }
 
   void _toggleStep(int index) {
+    final recipeProvider = context.read<RecipeProvider>();
     if (!_canToggleStep(index)) {
       // Show a message that previous steps must be completed first
       ScaffoldMessenger.of(context).showSnackBar(
@@ -78,41 +95,62 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
       );
       return;
     }
-
-    setState(() {
-      if (_completedSteps.contains(index)) {
-        // When uncompleting a step, also uncomplete all steps after it
-        _completedSteps.removeWhere((step) => step >= index);
-      } else {
-        _completedSteps.add(index);
-      }
-    });
+    recipeProvider.toggleStepCompletion(index);
   }
 
   /// Get the next step that needs to be completed
   int _getNextIncompleteStep() {
+    final completedSteps = context.read<RecipeProvider>().completedSteps;
     for (int i = 0; i < widget.recipe.instructions.length; i++) {
-      if (!_completedSteps.contains(i)) {
+      if (!completedSteps.contains(i)) {
         return i;
       }
     }
     return widget.recipe.instructions.length - 1;
   }
 
-  /// Toggle TTS for an instruction
+  /// Toggle TTS for an instruction - only works for unlocked, incomplete steps
   void _toggleTts(int index, String text) async {
-    if (_currentlyPlayingIndex == index) {
+    final recipeProvider = context.read<RecipeProvider>();
+    final completedSteps = recipeProvider.completedSteps;
+    final currentlyPlayingIndex = recipeProvider.currentlyPlayingIndex;
+
+    // Check if step is already completed - don't allow replay
+    if (completedSteps.contains(index)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This step is already completed'),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Check if step is locked (previous steps not completed)
+    if (!_canToggleStep(index)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Complete step ${_getNextIncompleteStep() + 1} first to unlock audio',
+          ),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (currentlyPlayingIndex == index) {
       // Currently playing this step, stop it
       await _ttsService.stop();
-      setState(() {
-        _currentlyPlayingIndex = null;
-      });
+      recipeProvider.setCurrentlyPlayingIndex(null);
     } else {
       // Stop any current playback and start new
       await _ttsService.stop();
-      setState(() {
-        _currentlyPlayingIndex = index;
-      });
+      recipeProvider.setCurrentlyPlayingIndex(index);
+
+      // Speak - onComplete callback will handle auto-advance
       await _ttsService.speak(text);
     }
   }
@@ -121,6 +159,9 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
+    final recipeProvider = context.watch<RecipeProvider>();
+    final completedSteps = recipeProvider.completedSteps;
+    final currentlyPlayingIndex = recipeProvider.currentlyPlayingIndex;
 
     return Column(
       children: [
@@ -157,7 +198,7 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                 ),
                 const Spacer(),
                 Text(
-                  '${_completedSteps.length}/${widget.recipe.instructions.length}',
+                  '${completedSteps.length}/${widget.recipe.instructions.length}',
                   style: textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: colorScheme.onSurfaceVariant,
@@ -172,7 +213,7 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                     child: LinearProgressIndicator(
                       value: widget.recipe.instructions.isEmpty
                           ? 0
-                          : _completedSteps.length /
+                          : completedSteps.length /
                                 widget.recipe.instructions.length,
                       backgroundColor: colorScheme.outline,
                       valueColor: AlwaysStoppedAnimation<Color>(
@@ -189,18 +230,20 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
         // Scrollable instructions list
         Expanded(
           child: ListView.builder(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppSizes.paddingLg,
-              vertical: AppSizes.vPaddingSm,
+            padding: EdgeInsets.only(
+              left: AppSizes.paddingLg,
+              right: AppSizes.paddingLg,
+              top: AppSizes.vPaddingSm,
+              bottom: 120.h, // Extra space at bottom for FAB clearance
             ),
             itemCount: widget.recipe.instructions.length,
             itemBuilder: (context, index) {
               final instruction = widget.recipe.instructions[index];
-              final isCompleted = _completedSteps.contains(index);
+              final isCompleted = completedSteps.contains(index);
               final isLastStep = index == widget.recipe.instructions.length - 1;
               final isLocked = !_canToggleStep(index);
               final isNextStep = index == _getNextIncompleteStep();
-              final isPlaying = _currentlyPlayingIndex == index;
+              final isPlaying = currentlyPlayingIndex == index;
 
               // Check for time in instruction
               final duration = TimeParserUtils.parseTimeFromText(instruction);
@@ -358,7 +401,7 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                                       isCompleted
                                           ? colorScheme.primary
                                           : colorScheme.outline,
-                                      _completedSteps.contains(index + 1)
+                                      completedSteps.contains(index + 1)
                                           ? colorScheme.primary
                                           : colorScheme.outline,
                                     ],
@@ -499,8 +542,8 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
                                   ),
                                   child: Text(instruction),
                                 ),
-                                // Timer widget for instructions with time
-                                if (hasTimer)
+                                // Timer widget for instructions with time (only for unlocked steps)
+                                if (hasTimer && !isLocked)
                                   InstructionTimerWidget(duration: duration),
                               ],
                             ),

@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'package:ai_ruchi/core/services/haptic_service.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/core/utils/time_parser_utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Inline timer widget for recipe instructions with time mentions
@@ -54,10 +56,25 @@ class _InstructionTimerWidgetState extends State<InstructionTimerWidget> {
           _timer?.cancel();
           _isRunning = false;
           _isComplete = true;
+          _playCompletionBeep();
           widget.onComplete?.call();
         }
       });
     });
+  }
+
+  /// Play beep-like feedback on timer completion
+  void _playCompletionBeep() {
+    // Multiple short vibrations to simulate beep pattern
+    HapticService.heavyImpact();
+    Future.delayed(const Duration(milliseconds: 200), () {
+      HapticService.heavyImpact();
+    });
+    Future.delayed(const Duration(milliseconds: 400), () {
+      HapticService.heavyImpact();
+    });
+    // Also play system sound
+    SystemSound.play(SystemSoundType.alert);
   }
 
   void _pauseTimer() {

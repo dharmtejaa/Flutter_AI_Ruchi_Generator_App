@@ -10,7 +10,6 @@ import 'package:ai_ruchi/shared/widgets/recipe/recipe_image_widget.dart';
 import 'package:ai_ruchi/shared/widgets/recipe/recipe_ingredients_tab.dart';
 import 'package:ai_ruchi/shared/widgets/recipe/recipe_instructions_tab.dart';
 import 'package:ai_ruchi/shared/widgets/recipe/recipe_nutrition_tab.dart';
-import 'package:ai_ruchi/shared/widgets/recipe/recipe_preferences_bottom_sheet.dart';
 import 'package:ai_ruchi/shared/widgets/recipe/save_recipe_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -337,16 +336,6 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Show Preferences FAB
-          FloatingActionButton.small(
-            heroTag: 'preferences_fab',
-            onPressed: () => _showPreferencesSheet(context),
-            backgroundColor: colorScheme.surfaceContainerHighest,
-            foregroundColor: colorScheme.primary,
-            elevation: 2,
-            child: const Icon(Icons.tune_rounded),
-          ),
-          SizedBox(height: 12.h),
           // Edit Ingredients FAB
           FloatingActionButton.small(
             heroTag: 'edit_fab',
@@ -381,17 +370,6 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
     if (recipe != null) {
       SaveRecipeDialog.show(context, recipe);
     }
-  }
-
-  void _showPreferencesSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (sheetContext) => RecipePreferencesBottomSheet(
-        onGenerateRecipe: () => _handleRegenerate(context),
-      ),
-    );
   }
 }
 

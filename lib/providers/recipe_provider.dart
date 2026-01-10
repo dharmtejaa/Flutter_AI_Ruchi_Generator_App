@@ -12,6 +12,10 @@ class RecipeProvider with ChangeNotifier {
   String _selectedDietary = 'none';
   int _selectedServings = 4;
 
+  // Instruction state (preserved across tab switches)
+  final Set<int> _completedSteps = {};
+  int? _currentlyPlayingIndex;
+
   Recipe? get recipe => _recipe;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -19,6 +23,10 @@ class RecipeProvider with ChangeNotifier {
   String get selectedCuisine => _selectedCuisine;
   String get selectedDietary => _selectedDietary;
   int get selectedServings => _selectedServings;
+
+  // Instruction state getters
+  Set<int> get completedSteps => _completedSteps;
+  int? get currentlyPlayingIndex => _currentlyPlayingIndex;
 
   // Available options
   static const List<String> providers = ['openai', 'gemini'];
@@ -80,6 +88,34 @@ class RecipeProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Instruction state management
+  void toggleStepCompletion(int index) {
+    if (_completedSteps.contains(index)) {
+      _completedSteps.remove(index);
+    } else {
+      _completedSteps.add(index);
+    }
+    notifyListeners();
+  }
+
+  void markStepCompleted(int index) {
+    if (!_completedSteps.contains(index)) {
+      _completedSteps.add(index);
+      notifyListeners();
+    }
+  }
+
+  void setCurrentlyPlayingIndex(int? index) {
+    _currentlyPlayingIndex = index;
+    notifyListeners();
+  }
+
+  void resetInstructionState() {
+    _completedSteps.clear();
+    _currentlyPlayingIndex = null;
+    notifyListeners();
+  }
+
   Future<void> generateRecipe(List<Ingredient> ingredients) async {
     _isLoading = true;
     _error = null;
@@ -97,6 +133,9 @@ class RecipeProvider with ChangeNotifier {
       _recipe = generatedRecipe;
       _isLoading = false;
       _error = null;
+      // Reset instruction state for new recipe
+      _completedSteps.clear();
+      _currentlyPlayingIndex = null;
       notifyListeners();
     } catch (e) {
       _isLoading = false;
@@ -109,6 +148,8 @@ class RecipeProvider with ChangeNotifier {
   void clearRecipe() {
     _recipe = null;
     _error = null;
+    _completedSteps.clear();
+    _currentlyPlayingIndex = null;
     notifyListeners();
   }
 
@@ -116,6 +157,9 @@ class RecipeProvider with ChangeNotifier {
   void setRecipe(Recipe recipe) {
     _recipe = recipe;
     _error = null;
+    // Reset instruction state for new recipe
+    _completedSteps.clear();
+    _currentlyPlayingIndex = null;
     notifyListeners();
   }
 

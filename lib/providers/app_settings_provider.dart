@@ -12,7 +12,7 @@ class AppSettingsProvider with ChangeNotifier {
 
   bool _shakeToScanEnabled = true;
   bool _ttsEnabled = true;
-  double _ttsSpeed = 0.5;
+  double _ttsSpeed = 0.4; // Default 0.8x speed
   double _ttsPitch = 1.0;
   String? _ttsVoice;
   int _defaultServings = 4;
@@ -35,7 +35,7 @@ class AppSettingsProvider with ChangeNotifier {
 
       _shakeToScanEnabled = prefs.getBool(_keyShakeToScan) ?? true;
       _ttsEnabled = prefs.getBool(_keyTtsEnabled) ?? true;
-      _ttsSpeed = prefs.getDouble(_keyTtsSpeed) ?? 0.5;
+      _ttsSpeed = prefs.getDouble(_keyTtsSpeed) ?? 0.4;
       _ttsPitch = prefs.getDouble(_keyTtsPitch) ?? 1.0;
       _ttsVoice = prefs.getString(_keyTtsVoice);
       _defaultServings = prefs.getInt(_keyDefaultServings) ?? 4;
@@ -119,7 +119,7 @@ class AppSettingsProvider with ChangeNotifier {
 
     _shakeToScanEnabled = true;
     _ttsEnabled = true;
-    _ttsSpeed = 0.5;
+    _ttsSpeed = 0.4;
     _ttsPitch = 1.0;
     _ttsVoice = null;
     _defaultServings = 4;

@@ -105,7 +105,7 @@ class PoisonWarningDialog extends StatelessWidget {
                 shrinkWrap: true,
                 padding: EdgeInsets.all(AppSizes.paddingSm),
                 itemCount: detectedItems.length,
-                separatorBuilder: (_, __) => Divider(
+                separatorBuilder: (_, _) => Divider(
                   height: 1,
                   color: Colors.red.withValues(alpha: 0.1),
                 ),
