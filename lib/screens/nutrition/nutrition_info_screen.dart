@@ -31,35 +31,54 @@ class _NutritionInfoScreenState extends State<NutritionInfoScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchNutritionData();
+      _startParallelProcessing();
     });
   }
 
-  Future<void> _fetchNutritionData() async {
-    final ingredients = context.read<IngredientsProvider>().currentIngredients;
-    if (ingredients.isEmpty) return;
-
-    final recipeProvider = context.read<RecipeProvider>();
-
+  Future<void> _startParallelProcessing() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
+    // Run ad and fetch in parallel
+    final adFuture = _showAdImmediately();
+    final fetchFuture = _fetchDataInBackground();
+
+    // Wait for both
+    await Future.wait([adFuture, fetchFuture]);
+
+    // Data is set in _fetchDataInBackground, no extra action needed
+  }
+
+  Future<void> _showAdImmediately() async {
     try {
-      // Start Ad and API fetch concurrently
-      // This covers the loading time with the ad
-      final adFuture = AdService().showInterstitialAd();
-      final recipeFuture = RecipeApiService.generateRecipe(
+      AdService().loadInterstitialAd();
+      await Future.delayed(const Duration(milliseconds: 500));
+      await AdService().showInterstitialAd();
+    } catch (_) {
+      // Ad failed to load/show, continue anyway
+    }
+  }
+
+  Future<void> _fetchDataInBackground() async {
+    final ingredients = context.read<IngredientsProvider>().currentIngredients;
+    if (ingredients.isEmpty) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      return;
+    }
+
+    final recipeProvider = context.read<RecipeProvider>();
+
+    try {
+      final recipe = await RecipeApiService.generateRecipe(
         ingredients: ingredients,
         provider: recipeProvider.selectedProvider,
         cuisine: recipeProvider.selectedCuisine,
         dietary: recipeProvider.selectedDietary,
       );
-
-      // Wait for both results
-      final results = await Future.wait([adFuture, recipeFuture]);
-      final recipe = results[1] as Recipe; // Get recipe from 2nd future
 
       if (mounted) {
         setState(() {
@@ -81,40 +100,160 @@ class _NutritionInfoScreenState extends State<NutritionInfoScreen> {
     }
   }
 
+  Future<void> _showCancelConfirmationDialog() async {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final shouldCancel = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: colorScheme.surface,
+        contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Icon
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.health_and_safety_rounded,
+                color: Colors.orange,
+                size: 40,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Title
+            Text(
+              'Stop Loading?',
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+
+            // Description
+            Text(
+              'Nutrition data is being analyzed. Are you sure you want to stop?',
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+
+            // Buttons - Keep Waiting (primary) first, then Stop
+            Column(
+              children: [
+                // Primary action - Keep Waiting
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    icon: Icon(Icons.hourglass_top_rounded, size: 20),
+                    label: Text(
+                      'Keep Waiting',
+                      style: textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onPrimary,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Secondary action - Stop
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    style: TextButton.styleFrom(
+                      foregroundColor: colorScheme.error,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Yes, Stop Loading',
+                      style: textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.error,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (shouldCancel == true && mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      body: Consumer<IngredientsProvider>(
-        builder: (context, provider, child) {
-          final ingredients = provider.currentIngredients;
+    return PopScope(
+      canPop: !_isLoading,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_isLoading) {
+          _showCancelConfirmationDialog();
+        }
+      },
+      child: Scaffold(
+        body: Consumer<IngredientsProvider>(
+          builder: (context, provider, child) {
+            final ingredients = provider.currentIngredients;
 
-          if (ingredients.isEmpty) {
-            return _buildEmptyState(context, colorScheme, textTheme);
-          }
+            if (ingredients.isEmpty) {
+              return _buildEmptyState(context, colorScheme, textTheme);
+            }
 
-          if (_isLoading) {
-            return _buildLoadingState(colorScheme, textTheme);
-          }
+            if (_isLoading) {
+              return _buildLoadingState(colorScheme, textTheme);
+            }
 
-          if (_errorMessage != null) {
-            return _buildErrorState(colorScheme, textTheme);
-          }
+            if (_errorMessage != null) {
+              return _buildErrorState(colorScheme, textTheme);
+            }
 
-          if (_nutritionRecipe == null) {
-            return _buildLoadingState(colorScheme, textTheme);
-          }
+            if (_nutritionRecipe == null) {
+              return _buildLoadingState(colorScheme, textTheme);
+            }
 
-          return _buildSliverContent(
-            context,
-            colorScheme,
-            textTheme,
-            ingredients,
-            _nutritionRecipe!,
-          );
-        },
+            return _buildSliverContent(
+              context,
+              colorScheme,
+              textTheme,
+              ingredients,
+              _nutritionRecipe!,
+            );
+          },
+        ),
       ),
     );
   }
@@ -340,7 +479,7 @@ class _NutritionInfoScreenState extends State<NutritionInfoScreen> {
                     ),
                     SizedBox(height: AppSizes.spaceHeightLg),
                     ElevatedButton.icon(
-                      onPressed: _fetchNutritionData,
+                      onPressed: _startParallelProcessing,
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
                       style: ElevatedButton.styleFrom(

@@ -1,4 +1,5 @@
 import 'package:ai_ruchi/core/services/ad_service.dart';
+import 'package:ai_ruchi/core/services/my_custom_cache_manager.dart';
 import 'package:ai_ruchi/core/utils/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -31,6 +32,9 @@ void main() async {
 
   // Ensure screen size is initialized for ScreenUtil (fixes release mode blank screen)
   await ScreenUtil.ensureScreenSize();
+
+  // Prune old cache entries on app start for better memory management
+  MyCustomCacheManager.pruneCache();
 
   runApp(const MyApp());
 }

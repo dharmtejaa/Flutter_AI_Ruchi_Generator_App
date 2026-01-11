@@ -40,9 +40,8 @@ android {
             isMinifyEnabled = true
             // Enables resource shrinking, which is performed by the Android Gradle plugin.
             isShrinkResources = true
-            // Includes the default ProGuard rules files that are packaged with
-            // the Android Gradle plugin.
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Use default ProGuard rules
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
         }
     }
 }

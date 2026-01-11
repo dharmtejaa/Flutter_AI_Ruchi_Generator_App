@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:ai_ruchi/models/ingredient.dart';
 import 'package:ai_ruchi/core/utils/ingredient_utils.dart';
 
+/// Provider for managing current ingredients list.
+///
+/// **Memory Management:** Ingredients are stored in memory only and are NOT
+/// persisted to disk. This is intentional - ingredients are transient data
+/// used for recipe generation. Users must explicitly save generated recipes
+/// to persist them.
 class IngredientsProvider with ChangeNotifier {
   final List<Ingredient> _currentIngredients = [];
   List<String> _suggestedAdditions = [];

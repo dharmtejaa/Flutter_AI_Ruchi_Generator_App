@@ -4,6 +4,11 @@ import 'package:ai_ruchi/models/recipe.dart';
 import 'package:ai_ruchi/core/services/recipe_api_service.dart';
 import 'package:ai_ruchi/models/ingredient.dart';
 
+/// Provider for managing generated recipe state.
+///
+/// **Memory Management:** This provider keeps recipe data in memory only.
+/// Data is NOT automatically persisted to disk. Users must explicitly save
+/// recipes using [SavedRecipesProvider.saveRecipe] to persist them.
 class RecipeProvider with ChangeNotifier {
   Recipe? _recipe;
   bool _isLoading = false;
