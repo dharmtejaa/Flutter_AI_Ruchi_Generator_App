@@ -123,6 +123,13 @@ class RecipeProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Reset all completed steps to start following recipe from beginning
+  void resetAllSteps() {
+    _completedSteps.clear();
+    _currentlyPlayingIndex = null;
+    notifyListeners();
+  }
+
   Future<void> generateRecipe(List<Ingredient> ingredients) async {
     _isLoading = true;
     _error = null;
