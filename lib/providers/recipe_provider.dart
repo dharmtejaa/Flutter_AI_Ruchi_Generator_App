@@ -131,11 +131,15 @@ class RecipeProvider with ChangeNotifier {
   }
 
   Future<void> generateRecipe(List<Ingredient> ingredients) async {
+    debugPrint('🍳 [RecipeProvider] Starting recipe generation...');
+    debugPrint('🍳 [RecipeProvider] Ingredients count: ${ingredients.length}');
+
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
+      debugPrint('🍳 [RecipeProvider] Calling API service...');
       final generatedRecipe = await RecipeApiService.generateRecipe(
         ingredients: ingredients,
         provider: _selectedProvider,
@@ -144,6 +148,9 @@ class RecipeProvider with ChangeNotifier {
         servings: _selectedServings,
       );
 
+      debugPrint(
+        '🍳 [RecipeProvider] Recipe received: ${generatedRecipe.title}',
+      );
       _recipe = generatedRecipe;
       _isLoading = false;
       _error = null;
@@ -152,6 +159,7 @@ class RecipeProvider with ChangeNotifier {
       _currentlyPlayingIndex = null;
       notifyListeners();
     } catch (e) {
+      debugPrint('🍳 [RecipeProvider] Error: $e');
       _isLoading = false;
       _error = e.toString();
       _recipe = null;

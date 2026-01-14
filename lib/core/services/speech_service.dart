@@ -62,7 +62,11 @@ class SpeechService {
           }
         },
         localeId: localeId,
-        pauseFor: const Duration(seconds: 3),
+        // Continuous listening configuration:
+        listenFor: const Duration(minutes: 10), // Max listen time per session
+        pauseFor: const Duration(
+          seconds: 30,
+        ), // Only pause after 30s of silence
       );
     }
   }

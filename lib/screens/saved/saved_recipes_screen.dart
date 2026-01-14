@@ -1,6 +1,7 @@
 import 'package:ai_ruchi/core/theme/app_shadows.dart';
 import 'package:ai_ruchi/core/utils/app_sizes.dart';
 import 'package:ai_ruchi/models/saved_recipe.dart';
+import 'package:ai_ruchi/providers/recipe_provider.dart';
 import 'package:ai_ruchi/providers/saved_recipes_provider.dart';
 import 'package:ai_ruchi/shared/widgets/common/custom_snackbar.dart';
 import 'package:ai_ruchi/shared/widgets/recipe/recipe_image_widget.dart';
@@ -204,9 +205,11 @@ class SavedRecipesScreen extends StatelessWidget {
   }
 
   void _viewRecipeDetails(BuildContext context, SavedRecipe savedRecipe) {
+    // Set the recipe in the provider so it's displayed in RecipeGeneratedScreen
+    context.read<RecipeProvider>().setRecipe(savedRecipe.recipe);
+
     // Navigate to recipe details
-    // For now, we'll use a route. Update if you have a specific route for viewing saved recipes.
-    context.push('/recipe', extra: savedRecipe.recipe);
+    context.push('/recipe');
   }
 }
 

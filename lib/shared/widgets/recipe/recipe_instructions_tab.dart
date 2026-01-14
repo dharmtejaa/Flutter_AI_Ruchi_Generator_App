@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/rendering.dart';
 import 'package:ai_ruchi/core/services/tts_service.dart';
 import 'package:ai_ruchi/core/services/speech_service.dart';
 import 'package:ai_ruchi/core/theme/app_shadows.dart';
@@ -31,10 +33,39 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
   final SpeechService _speechService = SpeechService();
   bool _isListening = false;
 
+  // 10-minute silence timeout timer
+  Timer? _silenceTimer;
+  static const Duration _silenceTimeout = Duration(minutes: 10);
+
+  // Scroll visibility for voice controls
+  bool _isVoiceControlVisible = false; // Hidden initially at top
+
   @override
   void initState() {
     super.initState();
     _initTts();
+  }
+
+  void _onScrollNotification(UserScrollNotification notification) {
+    // Hide if at the very top (header expanded)
+    // We use a tiny threshold (2px) to detect when list actually starts scrolling
+    if (notification.metrics.pixels < 2) {
+      if (_isVoiceControlVisible) {
+        setState(() => _isVoiceControlVisible = false);
+      }
+      return;
+    }
+
+    // Normal behavior: Show when stopped, hide when scrolling
+    if (notification.direction == ScrollDirection.idle) {
+      if (!_isVoiceControlVisible) {
+        setState(() => _isVoiceControlVisible = true);
+      }
+    } else {
+      if (_isVoiceControlVisible) {
+        setState(() => _isVoiceControlVisible = false);
+      }
+    }
   }
 
   Future<void> _initTts() async {
@@ -67,7 +98,7 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
             if (_isListening) {
               // Restart listening immediately
               _speechService.startListening(
-                onResult: (text) => _handleVoiceCommand(text),
+                onResult: (text) => handleVoiceCommand(text),
               );
             } else {
               // Truly stopped
@@ -83,39 +114,70 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
           // If error is permanent, maybe stop.
           // But generally for continuous listening we might want to retry?
           // For now, let's stop on error to prevent infinite error loops.
-          setState(() => _isListening = false);
+          stopListeningWithCleanup();
         }
       },
     );
   }
 
+  /// Start the 10-minute silence timeout timer
+  void startSilenceTimer() {
+    _silenceTimer?.cancel();
+    _silenceTimer = Timer(_silenceTimeout, () {
+      if (mounted && _isListening) {
+        debugPrint(
+          'Voice control: 10-minute silence timeout - turning off mic',
+        );
+        stopListeningWithCleanup();
+      }
+    });
+  }
+
+  /// Reset the silence timer (called when voice command is detected)
+  void resetSilenceTimer() {
+    if (_isListening) {
+      startSilenceTimer();
+    }
+  }
+
+  /// Stop listening and cleanup timer
+  void stopListeningWithCleanup() {
+    _silenceTimer?.cancel();
+    _silenceTimer = null;
+    setState(() => _isListening = false);
+    _speechService.stopListening();
+  }
+
   @override
   void dispose() {
+    _silenceTimer?.cancel();
     _ttsService.stop();
     _speechService.stopListening();
     super.dispose();
   }
 
-  void _toggleListening() async {
+  void toggleListening() async {
     if (_isListening) {
       // User explicitly wants to stop
-      setState(
-        () => _isListening = false,
-      ); // Update flag first so we don't auto-restart
-      await _speechService.stopListening();
+      stopListeningWithCleanup();
     } else {
       setState(() => _isListening = true);
+      startSilenceTimer(); // Start the 10-minute timeout
       await _speechService.startListening(
         onResult: (text) {
-          _handleVoiceCommand(text);
+          handleVoiceCommand(text);
           // With continuous listening, we don't stop here.
         },
       );
     }
   }
 
-  void _handleVoiceCommand(String text) {
+  void handleVoiceCommand(String text) {
     if (!mounted) return;
+
+    // Reset the 10-minute silence timer on each voice input
+    resetSilenceTimer();
+
     debugPrint('Voice command: $text');
     final command = text.toLowerCase();
 
@@ -140,7 +202,7 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
 
       stepTarget = recipeProvider.currentlyPlayingIndex;
       // If nothing playing, maybe the first incomplete step?
-      stepTarget ??= _getNextIncompleteStep();
+      stepTarget ??= getNextIncompleteStep();
 
       if (command.contains('start') || command.contains('begin')) {
         recipeProvider.dispatchTimerCommand(
@@ -178,14 +240,14 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
 
     // "Next"
     if (command.contains('next')) {
-      int nextIndex = _getNextIncompleteStep();
+      int nextIndex = getNextIncompleteStep();
       // If currently playing, go to next relative to that
       if (recipeProvider.currentlyPlayingIndex != null) {
         nextIndex = recipeProvider.currentlyPlayingIndex! + 1;
       }
 
       if (nextIndex < instructions.length && nextIndex >= 0) {
-        _toggleTts(nextIndex, instructions[nextIndex]);
+        toggleTts(nextIndex, instructions[nextIndex]);
       }
       return;
     }
@@ -197,7 +259,7 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
       final stepNum = int.tryParse(stepMatch.group(1) ?? '');
       if (stepNum != null && stepNum > 0 && stepNum <= instructions.length) {
         final index = stepNum - 1;
-        _toggleTts(index, instructions[index]);
+        toggleTts(index, instructions[index]);
         return;
       }
     }
@@ -206,16 +268,16 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
     if (command.contains('play') ||
         command.contains('start') ||
         command.contains('read')) {
-      final index = _getNextIncompleteStep();
+      final index = getNextIncompleteStep();
       if (index < instructions.length) {
-        _toggleTts(index, instructions[index]);
+        toggleTts(index, instructions[index]);
       }
       return;
     }
   }
 
   /// Check if a step can be toggled (must be sequential)
-  bool _canToggleStep(int index) {
+  bool canToggleStep(int index) {
     final completedSteps = context.read<RecipeProvider>().completedSteps;
     // Can always toggle if it's currently completed (to uncomplete)
     if (completedSteps.contains(index)) {
@@ -230,13 +292,13 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
     return true;
   }
 
-  void _toggleStep(int index) {
+  void toggleStep(int index) {
     final recipeProvider = context.read<RecipeProvider>();
-    if (!_canToggleStep(index)) {
+    if (!canToggleStep(index)) {
       // Show a message that previous steps must be completed first
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Complete step ${_getNextIncompleteStep() + 1} first'),
+          content: Text('Complete step ${getNextIncompleteStep() + 1} first'),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
@@ -247,7 +309,7 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
   }
 
   /// Get the next step that needs to be completed
-  int _getNextIncompleteStep() {
+  int getNextIncompleteStep() {
     final completedSteps = context.read<RecipeProvider>().completedSteps;
     for (int i = 0; i < widget.recipe.instructions.length; i++) {
       if (!completedSteps.contains(i)) {
@@ -258,7 +320,7 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
   }
 
   /// Toggle TTS for an instruction - only works for unlocked, incomplete steps
-  void _toggleTts(int index, String text) async {
+  void toggleTts(int index, String text) async {
     final recipeProvider = context.read<RecipeProvider>();
     final completedSteps = recipeProvider.completedSteps;
     final currentlyPlayingIndex = recipeProvider.currentlyPlayingIndex;
@@ -269,11 +331,11 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
     }
 
     // Check if step is locked (previous steps not completed)
-    if (!_canToggleStep(index)) {
+    if (!canToggleStep(index)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Complete step ${_getNextIncompleteStep() + 1} first to unlock audio',
+            'Complete step ${getNextIncompleteStep() + 1} first to unlock audio',
           ),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
@@ -372,592 +434,503 @@ class _RecipeInstructionsTabState extends State<RecipeInstructionsTab> {
 
             // Scrollable instructions list
             Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.only(
-                  left: AppSizes.paddingLg,
-                  right: AppSizes.paddingLg,
-                  top: AppSizes.vPaddingSm,
-                  bottom: 120.h, // Extra space at bottom for FAB clearance
-                ),
-                itemCount: widget.recipe.instructions.length,
-                itemBuilder: (context, index) {
-                  final instruction = widget.recipe.instructions[index];
-                  final isCompleted = completedSteps.contains(index);
-                  final isLastStep =
-                      index == widget.recipe.instructions.length - 1;
-                  final isLocked = !_canToggleStep(index);
-                  final isNextStep = index == _getNextIncompleteStep();
-                  final isPlaying = currentlyPlayingIndex == index;
+              child: NotificationListener<UserScrollNotification>(
+                onNotification: (notification) {
+                  _onScrollNotification(notification);
+                  return true;
+                },
+                child: ListView.builder(
+                  padding: EdgeInsets.only(
+                    left: AppSizes.paddingLg,
+                    right: AppSizes.paddingLg,
+                    top: AppSizes.vPaddingSm,
+                    bottom: 120.h, // Extra space at bottom for FAB clearance
+                  ),
+                  itemCount: widget.recipe.instructions.length,
+                  itemBuilder: (context, index) {
+                    final instruction = widget.recipe.instructions[index];
+                    final isCompleted = completedSteps.contains(index);
+                    final isLastStep =
+                        index == widget.recipe.instructions.length - 1;
+                    final isLocked = !canToggleStep(index);
+                    final isNextStep = index == getNextIncompleteStep();
+                    final isPlaying = currentlyPlayingIndex == index;
 
-                  // Check for time in instruction
-                  final duration = TimeParserUtils.parseTimeFromText(
-                    instruction,
-                  );
-                  final hasTimer = duration != null;
+                    // Check for time in instruction
+                    final duration = TimeParserUtils.parseTimeFromText(
+                      instruction,
+                    );
+                    final hasTimer = duration != null;
 
-                  return TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0.0, end: 1.0),
-                    duration: Duration(milliseconds: 300 + (index * 50)),
-                    curve: Curves.easeOut,
-                    builder: (context, value, child) {
-                      return Transform.translate(
-                        offset: Offset(30 * (1 - value), 0),
-                        child: Opacity(opacity: value, child: child),
-                      );
-                    },
-                    child: IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Step indicator with line
-                          Column(
-                            children: [
-                              // Audio play/stop button as step indicator
-                              GestureDetector(
-                                onTap: () => _toggleTts(index, instruction),
+                    return TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: Duration(milliseconds: 300 + (index * 50)),
+                      curve: Curves.easeOut,
+                      builder: (context, value, child) {
+                        return Transform.translate(
+                          offset: Offset(30 * (1 - value), 0),
+                          child: Opacity(opacity: value, child: child),
+                        );
+                      },
+                      child: IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Step indicator with line
+                            Column(
+                              children: [
+                                // Audio play/stop button as step indicator
+                                GestureDetector(
+                                  onTap: () => toggleTts(index, instruction),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    width: 40.w,
+                                    height: 40.h,
+                                    decoration: BoxDecoration(
+                                      gradient: isPlaying
+                                          ? LinearGradient(
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                              colors: [
+                                                Colors.orange,
+                                                Colors.orange.shade700,
+                                              ],
+                                            )
+                                          : isCompleted
+                                          ? LinearGradient(
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                              colors: [
+                                                colorScheme.primary,
+                                                colorScheme.primary.withValues(
+                                                  alpha: 0.8,
+                                                ),
+                                              ],
+                                            )
+                                          : null,
+                                      color: isPlaying || isCompleted
+                                          ? null
+                                          : isLocked
+                                          ? colorScheme.surfaceContainerHighest
+                                          : colorScheme.surfaceContainer,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isPlaying
+                                            ? Colors.orange
+                                            : isCompleted
+                                            ? colorScheme.primary
+                                            : isNextStep
+                                            ? colorScheme.primary.withValues(
+                                                alpha: 0.5,
+                                              )
+                                            : colorScheme.outline.withValues(
+                                                alpha: isLocked ? 0.3 : 1,
+                                              ),
+                                        width: isNextStep || isPlaying
+                                            ? 2.5
+                                            : 2,
+                                      ),
+                                      boxShadow: isPlaying
+                                          ? [
+                                              BoxShadow(
+                                                color: Colors.orange.withValues(
+                                                  alpha: 0.4,
+                                                ),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ]
+                                          : isCompleted
+                                          ? [
+                                              BoxShadow(
+                                                color: colorScheme.primary
+                                                    .withValues(alpha: 0.3),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ]
+                                          : isNextStep
+                                          ? [
+                                              BoxShadow(
+                                                color: colorScheme.primary
+                                                    .withValues(alpha: 0.15),
+                                                blurRadius: 4,
+                                                offset: const Offset(0, 1),
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                    child: Center(
+                                      child: AnimatedSwitcher(
+                                        duration: const Duration(
+                                          milliseconds: 200,
+                                        ),
+                                        child: isPlaying
+                                            ? Icon(
+                                                Icons.stop_rounded,
+                                                key: const ValueKey('stop'),
+                                                color: Colors.white,
+                                                size: AppSizes.iconSm,
+                                              )
+                                            : isCompleted
+                                            ? Icon(
+                                                Icons.check,
+                                                key: const ValueKey('check'),
+                                                color: colorScheme.onPrimary,
+                                                size: AppSizes.iconSm,
+                                              )
+                                            : isLocked
+                                            ? Icon(
+                                                Icons.lock_outline,
+                                                key: ValueKey('lock_$index'),
+                                                color: colorScheme
+                                                    .onSurfaceVariant
+                                                    .withValues(alpha: 0.5),
+                                                size: 16.sp,
+                                              )
+                                            : Icon(
+                                                Icons.play_arrow_rounded,
+                                                key: ValueKey('play_$index'),
+                                                color: isNextStep
+                                                    ? colorScheme.primary
+                                                    : colorScheme
+                                                          .onSurfaceVariant,
+                                                size: AppSizes.iconSm,
+                                              ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Connecting line
+                                if (!isLastStep)
+                                  Expanded(
+                                    child: Container(
+                                      width: 3.w,
+                                      margin: EdgeInsets.symmetric(
+                                        vertical: AppSizes.vPaddingXs,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(
+                                          1.5.r,
+                                        ),
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            isCompleted
+                                                ? colorScheme.primary
+                                                : colorScheme.outline,
+                                            completedSteps.contains(index + 1)
+                                                ? colorScheme.primary
+                                                : colorScheme.outline,
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            SizedBox(width: AppSizes.spaceMd),
+                            // Instruction card
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => toggleStep(index),
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 200),
-                                  width: 40.w,
-                                  height: 40.h,
+                                  margin: EdgeInsets.only(
+                                    bottom: isLastStep
+                                        ? 0
+                                        : AppSizes.spaceHeightMd,
+                                  ),
+                                  padding: EdgeInsets.all(AppSizes.paddingMd),
                                   decoration: BoxDecoration(
-                                    gradient: isPlaying
-                                        ? LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: [
-                                              Colors.orange,
-                                              Colors.orange.shade700,
-                                            ],
-                                          )
+                                    color: isPlaying
+                                        ? Colors.orange.withValues(alpha: 0.05)
                                         : isCompleted
-                                        ? LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: [
-                                              colorScheme.primary,
-                                              colorScheme.primary.withValues(
-                                                alpha: 0.8,
-                                              ),
-                                            ],
+                                        ? colorScheme.primary.withValues(
+                                            alpha: 0.05,
                                           )
-                                        : null,
-                                    color: isPlaying || isCompleted
-                                        ? null
                                         : isLocked
                                         ? colorScheme.surfaceContainerHighest
-                                        : colorScheme.surfaceContainer,
-                                    shape: BoxShape.circle,
+                                              .withValues(alpha: 0.5)
+                                        : colorScheme.surface,
+                                    borderRadius: BorderRadius.circular(
+                                      AppSizes.radiusLg,
+                                    ),
                                     border: Border.all(
                                       color: isPlaying
-                                          ? Colors.orange
+                                          ? Colors.orange.withValues(alpha: 0.3)
                                           : isCompleted
-                                          ? colorScheme.primary
+                                          ? colorScheme.primary.withValues(
+                                              alpha: 0.3,
+                                            )
                                           : isNextStep
                                           ? colorScheme.primary.withValues(
-                                              alpha: 0.5,
+                                              alpha: 0.3,
                                             )
                                           : colorScheme.outline.withValues(
-                                              alpha: isLocked ? 0.3 : 1,
-                                            ),
-                                      width: isNextStep || isPlaying ? 2.5 : 2,
-                                    ),
-                                    boxShadow: isPlaying
-                                        ? [
-                                            BoxShadow(
-                                              color: Colors.orange.withValues(
-                                                alpha: 0.4,
-                                              ),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ]
-                                        : isCompleted
-                                        ? [
-                                            BoxShadow(
-                                              color: colorScheme.primary
-                                                  .withValues(alpha: 0.3),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ]
-                                        : isNextStep
-                                        ? [
-                                            BoxShadow(
-                                              color: colorScheme.primary
-                                                  .withValues(alpha: 0.15),
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 1),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Center(
-                                    child: AnimatedSwitcher(
-                                      duration: const Duration(
-                                        milliseconds: 200,
-                                      ),
-                                      child: isPlaying
-                                          ? Icon(
-                                              Icons.stop_rounded,
-                                              key: const ValueKey('stop'),
-                                              color: Colors.white,
-                                              size: AppSizes.iconSm,
-                                            )
-                                          : isCompleted
-                                          ? Icon(
-                                              Icons.check,
-                                              key: const ValueKey('check'),
-                                              color: colorScheme.onPrimary,
-                                              size: AppSizes.iconSm,
-                                            )
-                                          : isLocked
-                                          ? Icon(
-                                              Icons.lock_outline,
-                                              key: ValueKey('lock_$index'),
-                                              color: colorScheme
-                                                  .onSurfaceVariant
-                                                  .withValues(alpha: 0.5),
-                                              size: 16.sp,
-                                            )
-                                          : Icon(
-                                              Icons.play_arrow_rounded,
-                                              key: ValueKey('play_$index'),
-                                              color: isNextStep
-                                                  ? colorScheme.primary
-                                                  : colorScheme
-                                                        .onSurfaceVariant,
-                                              size: AppSizes.iconSm,
+                                              alpha: isLocked ? 0.1 : 0.15,
                                             ),
                                     ),
+                                    boxShadow: isLocked
+                                        ? null
+                                        : AppShadows.cardShadow(context),
                                   ),
-                                ),
-                              ),
-                              // Connecting line
-                              if (!isLastStep)
-                                Expanded(
-                                  child: Container(
-                                    width: 3.w,
-                                    margin: EdgeInsets.symmetric(
-                                      vertical: AppSizes.vPaddingXs,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(
-                                        1.5.r,
-                                      ),
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          isCompleted
-                                              ? colorScheme.primary
-                                              : colorScheme.outline,
-                                          completedSteps.contains(index + 1)
-                                              ? colorScheme.primary
-                                              : colorScheme.outline,
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          SizedBox(width: AppSizes.spaceMd),
-                          // Instruction card
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => _toggleStep(index),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                margin: EdgeInsets.only(
-                                  bottom: isLastStep
-                                      ? 0
-                                      : AppSizes.spaceHeightMd,
-                                ),
-                                padding: EdgeInsets.all(AppSizes.paddingMd),
-                                decoration: BoxDecoration(
-                                  color: isPlaying
-                                      ? Colors.orange.withValues(alpha: 0.05)
-                                      : isCompleted
-                                      ? colorScheme.primary.withValues(
-                                          alpha: 0.05,
-                                        )
-                                      : isLocked
-                                      ? colorScheme.surfaceContainerHighest
-                                            .withValues(alpha: 0.5)
-                                      : colorScheme.surface,
-                                  borderRadius: BorderRadius.circular(
-                                    AppSizes.radiusLg,
-                                  ),
-                                  border: Border.all(
-                                    color: isPlaying
-                                        ? Colors.orange.withValues(alpha: 0.3)
-                                        : isCompleted
-                                        ? colorScheme.primary.withValues(
-                                            alpha: 0.3,
-                                          )
-                                        : isNextStep
-                                        ? colorScheme.primary.withValues(
-                                            alpha: 0.3,
-                                          )
-                                        : colorScheme.outline.withValues(
-                                            alpha: isLocked ? 0.1 : 0.15,
-                                          ),
-                                  ),
-                                  boxShadow: isLocked
-                                      ? null
-                                      : AppShadows.cardShadow(context),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Step number badge
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 8.w,
-                                            vertical: 2.h,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: isPlaying
-                                                ? Colors.orange.withValues(
-                                                    alpha: 0.15,
-                                                  )
-                                                : colorScheme.primary
-                                                      .withValues(alpha: 0.1),
-                                            borderRadius: BorderRadius.circular(
-                                              4.r,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            'Step ${index + 1}',
-                                            style: textTheme.labelSmall
-                                                ?.copyWith(
-                                                  color: isPlaying
-                                                      ? Colors.orange
-                                                      : colorScheme.primary,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        if (hasTimer)
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Step number badge
+                                      Row(
+                                        children: [
                                           Container(
                                             padding: EdgeInsets.symmetric(
-                                              horizontal: 6.w,
+                                              horizontal: 8.w,
                                               vertical: 2.h,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: Colors.blue.withValues(
-                                                alpha: 0.1,
-                                              ),
+                                              color: isPlaying
+                                                  ? Colors.orange.withValues(
+                                                      alpha: 0.15,
+                                                    )
+                                                  : colorScheme.primary
+                                                        .withValues(alpha: 0.1),
                                               borderRadius:
                                                   BorderRadius.circular(4.r),
                                             ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  Icons.timer,
-                                                  size: 12.sp,
-                                                  color: Colors.blue,
-                                                ),
-                                                SizedBox(width: 4.w),
-                                                Text(
-                                                  TimeParserUtils.formatDuration(
-                                                    duration,
+                                            child: Text(
+                                              'Step ${index + 1}',
+                                              style: textTheme.labelSmall
+                                                  ?.copyWith(
+                                                    color: isPlaying
+                                                        ? Colors.orange
+                                                        : colorScheme.primary,
+                                                    fontWeight: FontWeight.w600,
                                                   ),
-                                                  style: textTheme.labelSmall
-                                                      ?.copyWith(
-                                                        color: Colors.blue,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                      ),
-                                                ),
-                                              ],
                                             ),
                                           ),
-                                      ],
-                                    ),
-                                    SizedBox(height: 8.h),
-                                    // Instruction text
-                                    AnimatedDefaultTextStyle(
-                                      duration: const Duration(
-                                        milliseconds: 200,
+                                          const Spacer(),
+                                          if (hasTimer)
+                                            Container(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 6.w,
+                                                vertical: 2.h,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.blue.withValues(
+                                                  alpha: 0.1,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(4.r),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    Icons.timer,
+                                                    size: 12.sp,
+                                                    color: Colors.blue,
+                                                  ),
+                                                  SizedBox(width: 4.w),
+                                                  Text(
+                                                    TimeParserUtils.formatDuration(
+                                                      duration,
+                                                    ),
+                                                    style: textTheme.labelSmall
+                                                        ?.copyWith(
+                                                          color: Colors.blue,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                        ],
                                       ),
-                                      style: textTheme.bodyMedium!.copyWith(
-                                        color: isCompleted
-                                            ? colorScheme.onSurface.withValues(
-                                                alpha: 0.6,
-                                              )
-                                            : isLocked
-                                            ? colorScheme.onSurface.withValues(
-                                                alpha: 0.4,
-                                              )
-                                            : colorScheme.onSurface,
-                                        height: 1.5,
-                                        decoration: isCompleted
-                                            ? TextDecoration.lineThrough
-                                            : TextDecoration.none,
+                                      SizedBox(height: 8.h),
+                                      // Instruction text
+                                      AnimatedDefaultTextStyle(
+                                        duration: const Duration(
+                                          milliseconds: 200,
+                                        ),
+                                        style: textTheme.bodyMedium!.copyWith(
+                                          color: isCompleted
+                                              ? colorScheme.onSurface
+                                                    .withValues(alpha: 0.6)
+                                              : isLocked
+                                              ? colorScheme.onSurface
+                                                    .withValues(alpha: 0.4)
+                                              : colorScheme.onSurface,
+                                          height: 1.5,
+                                          decoration: isCompleted
+                                              ? TextDecoration.lineThrough
+                                              : TextDecoration.none,
+                                        ),
+                                        child: Text(instruction),
                                       ),
-                                      child: Text(instruction),
-                                    ),
-                                    // Timer widget for instructions with time (only for unlocked and incomplete steps)
-                                    if (hasTimer && !isLocked && !isCompleted)
-                                      InstructionTimerWidget(
-                                        duration: duration,
-                                        stepIndex: index,
-                                      ),
-                                  ],
+                                      // Timer widget for instructions with time (only for unlocked and incomplete steps)
+                                      if (hasTimer && !isLocked && !isCompleted)
+                                        InstructionTimerWidget(
+                                          duration: duration,
+                                          stepIndex: index,
+                                        ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           ],
         ),
 
-        // Floating Voice Control Bar
+        // Floating Voice Control Buttons (no container, just floating icons)
         Positioned(
           left: 0,
           right: 0,
-          bottom: 16.h,
-          child: Center(
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(50.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.shadow.withValues(alpha: 0.15),
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                border: Border.all(
-                  color: colorScheme.outline.withValues(alpha: 0.1),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Edit Button (Left - Smaller)
-                  _VoiceControlButton(
-                    icon: Icons.edit_rounded,
-                    label: 'Edit',
-                    isSmall: true,
-                    onTap: widget.onRegenerate,
-                    color: colorScheme.primary,
-                  ),
-
-                  SizedBox(width: 16.w),
-
-                  // Mic Button (Center - Larger, Floating)
-                  GestureDetector(
-                    onTap: _toggleListening,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      width: 64.w,
-                      height: 64.h,
-                      decoration: BoxDecoration(
-                        gradient: _isListening
-                            ? const LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [Colors.red, Color(0xFFB71C1C)],
-                              )
-                            : LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  colorScheme.primary,
-                                  colorScheme.primary.withValues(alpha: 0.8),
-                                ],
-                              ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                (_isListening
-                                        ? Colors.red
-                                        : colorScheme.primary)
-                                    .withValues(alpha: 0.4),
-                            blurRadius: _isListening ? 16 : 12,
-                            offset: const Offset(0, 4),
+          bottom: 12.h,
+          child: AnimatedSlide(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            offset: _isVoiceControlVisible ? Offset.zero : const Offset(0, 2.0),
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 300),
+              opacity: _isVoiceControlVisible ? 1.0 : 0.0,
+              child: IgnorePointer(
+                ignoring: !_isVoiceControlVisible,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Edit Button (Left - Smaller)
+                    GestureDetector(
+                      onTap: widget.onRegenerate,
+                      child: Container(
+                        width: 44.w,
+                        height: 44.h,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surface,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.shadow.withValues(alpha: 0.2),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.edit_rounded,
+                            color: colorScheme.primary,
+                            size: 20.sp,
                           ),
-                        ],
-                      ),
-                      child: Center(
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          child: _isListening
-                              ? Icon(
-                                  Icons.mic_rounded,
-                                  key: const ValueKey('mic_on'),
-                                  color: Colors.white,
-                                  size: 28.sp,
-                                )
-                              : Icon(
-                                  Icons.mic_none_rounded,
-                                  key: const ValueKey('mic_off'),
-                                  color: Colors.white,
-                                  size: 28.sp,
-                                ),
                         ),
                       ),
                     ),
-                  ),
 
-                  SizedBox(width: 16.w),
+                    SizedBox(width: 20.w),
 
-                  // Retry Button (Right - Smaller)
-                  _VoiceControlButton(
-                    icon: Icons.refresh_rounded,
-                    label: 'Retry',
-                    isSmall: true,
-                    onTap: () {
-                      // Reset all steps and start over
-                      final recipeProvider = context.read<RecipeProvider>();
-                      recipeProvider.resetAllSteps();
-                    },
-                    color: colorScheme.secondary,
-                  ),
-                ],
+                    // Mic Button (Center - Larger, Floating)
+                    GestureDetector(
+                      onTap: toggleListening,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        width: 60.w,
+                        height: 60.h,
+                        decoration: BoxDecoration(
+                          gradient: _isListening
+                              ? const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [Colors.red, Color(0xFFB71C1C)],
+                                )
+                              : LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    colorScheme.primary,
+                                    colorScheme.primary.withValues(alpha: 0.8),
+                                  ],
+                                ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                                  (_isListening
+                                          ? Colors.red
+                                          : colorScheme.primary)
+                                      .withValues(alpha: 0.4),
+                              blurRadius: _isListening ? 16 : 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            child: _isListening
+                                ? Icon(
+                                    Icons.mic_rounded,
+                                    key: const ValueKey('mic_on'),
+                                    color: Colors.white,
+                                    size: 26.sp,
+                                  )
+                                : Icon(
+                                    Icons.mic_none_rounded,
+                                    key: const ValueKey('mic_off'),
+                                    color: Colors.white,
+                                    size: 26.sp,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(width: 20.w),
+
+                    // Retry Button (Right - Smaller)
+                    GestureDetector(
+                      onTap: () {
+                        final recipeProvider = context.read<RecipeProvider>();
+                        recipeProvider.resetAllSteps();
+                      },
+                      child: Container(
+                        width: 44.w,
+                        height: 44.h,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surface,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.shadow.withValues(alpha: 0.2),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.refresh_rounded,
+                            color: colorScheme.secondary,
+                            size: 20.sp,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
-
-        // Voice Commands Help Tooltip (shown when listening)
-        if (_isListening)
-          Positioned(
-            left: 16.w,
-            right: 16.w,
-            bottom: 100.h,
-            child: Center(
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                decoration: BoxDecoration(
-                  color: colorScheme.inverseSurface.withValues(alpha: 0.95),
-                  borderRadius: BorderRadius.circular(12.r),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.record_voice_over_rounded,
-                          color: colorScheme.onInverseSurface,
-                          size: 16.sp,
-                        ),
-                        SizedBox(width: 8.w),
-                        Text(
-                          'Listening... Try saying:',
-                          style: textTheme.labelMedium?.copyWith(
-                            color: colorScheme.onInverseSurface,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 8.h),
-                    Text(
-                      '"Next" • "Play" • "Stop" • "Step 2"',
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onInverseSurface.withValues(
-                          alpha: 0.8,
-                        ),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      '"Start timer" • "Stop timer" • "Reset timer"',
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onInverseSurface.withValues(
-                          alpha: 0.8,
-                        ),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
       ],
-    );
-  }
-}
-
-/// Helper widget for smaller voice control buttons
-class _VoiceControlButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSmall;
-  final VoidCallback onTap;
-  final Color color;
-
-  const _VoiceControlButton({
-    required this.icon,
-    required this.label,
-    required this.isSmall,
-    required this.onTap,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40.w,
-            height: 40.h,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: color.withValues(alpha: 0.3),
-                width: 1.5,
-              ),
-            ),
-            child: Center(
-              child: Icon(icon, color: color, size: 18.sp),
-            ),
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            label,
-            style: textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-              fontSize: 10.sp,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

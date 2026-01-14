@@ -27,6 +27,7 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _tutorialChecked = false;
+  int _currentTabIndex = 0; // Track current tab to hide FAB on Instructions
 
   // ============================================================================
   // TUTORIAL GLOBAL KEYS
@@ -43,10 +44,21 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    // Listen to tab changes to hide FAB on Instructions tab
+    _tabController.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() {
+    if (_tabController.indexIsChanging == false) {
+      setState(() {
+        _currentTabIndex = _tabController.index;
+      });
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -333,30 +345,44 @@ class _RecipeGeneratedScreenState extends State<RecipeGeneratedScreen>
           ],
         ),
       ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Edit Ingredients FAB
-          FloatingActionButton.small(
-            heroTag: 'edit_fab',
-            onPressed: () => context.push('/adjust'),
-            backgroundColor: colorScheme.surfaceContainerHighest,
-            foregroundColor: colorScheme.primary,
-            elevation: 2,
-            child: const Icon(Icons.edit_rounded),
+      // Hide FAB on Instructions tab (index 1) with smooth slide animation (slides down to hide)
+      floatingActionButton: AnimatedSlide(
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+        offset: _currentTabIndex == 1 ? const Offset(0, 1.5) : Offset.zero,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          opacity: _currentTabIndex == 1 ? 0 : 1,
+          child: IgnorePointer(
+            ignoring: _currentTabIndex == 1,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Edit Ingredients FAB
+                FloatingActionButton.small(
+                  heroTag: 'edit_fab',
+                  onPressed: () => context.push('/adjust'),
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  foregroundColor: colorScheme.primary,
+                  elevation: 2,
+                  child: const Icon(Icons.edit_rounded),
+                ),
+                SizedBox(height: 12.h),
+                // Main Regenerate FAB (icon only)
+                FloatingActionButton(
+                  key: _regenerateButtonKey,
+                  heroTag: 'regenerate_fab',
+                  onPressed: () => _handleRegenerate(context),
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  elevation: 4,
+                  child: const Icon(Icons.refresh_rounded),
+                ),
+              ],
+            ),
           ),
-          SizedBox(height: 12.h),
-          // Main Regenerate FAB (icon only)
-          FloatingActionButton(
-            key: _regenerateButtonKey,
-            heroTag: 'regenerate_fab',
-            onPressed: () => _handleRegenerate(context),
-            backgroundColor: colorScheme.primary,
-            foregroundColor: colorScheme.onPrimary,
-            elevation: 4,
-            child: const Icon(Icons.refresh_rounded),
-          ),
-        ],
+        ),
       ),
     );
   }
