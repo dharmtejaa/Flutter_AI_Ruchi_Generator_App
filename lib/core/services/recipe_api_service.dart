@@ -2,10 +2,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:ai_ruchi/models/recipe.dart';
 import 'package:ai_ruchi/models/ingredient.dart';
+import 'package:ai_ruchi/core/config/env_config.dart';
 
 class RecipeApiService {
-  static const String baseUrl =
-      'https://aicook-backend.onrender.com/api/recipe/generate';
+  /// Get the base URL from environment config
+  static String get baseUrl => EnvConfig.recipeApiBaseUrl;
 
   /// Generate recipe from ingredients
   ///

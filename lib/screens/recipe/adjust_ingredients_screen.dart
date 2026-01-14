@@ -4,11 +4,10 @@ import 'package:ai_ruchi/core/utils/recipe_helper.dart';
 import 'package:ai_ruchi/providers/ingredients_provider.dart';
 import 'package:ai_ruchi/shared/widgets/common/dismiss_keyboard.dart';
 import 'package:ai_ruchi/shared/widgets/ingredient/current_ingredients_section.dart';
-import 'package:ai_ruchi/shared/widgets/navigation/app_bottom_navigation_bar.dart';
 import 'package:ai_ruchi/shared/widgets/ingredient/ingredient_action_bar.dart';
 import 'package:ai_ruchi/shared/widgets/ingredient/ingredient_header_widget.dart';
 import 'package:ai_ruchi/shared/widgets/ingredient/ingredient_input_widget.dart';
-import 'package:ai_ruchi/shared/widgets/ingredient/suggested_additions_section.dart';
+import 'package:ai_ruchi/shared/widgets/ingredient/categorized_ingredient_suggestions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -84,8 +83,8 @@ class _AdjustIngredientsScreenState extends State<AdjustIngredientsScreen> {
 
                           SizedBox(height: AppSizes.spaceHeightLg),
 
-                          // Suggested Additions Section
-                          const SuggestedAdditionsSection(),
+                          // Categorized Ingredient Suggestions
+                          const CategorizedIngredientSuggestions(),
 
                           SizedBox(height: AppSizes.spaceHeightXl),
                         ],
@@ -105,7 +104,6 @@ class _AdjustIngredientsScreenState extends State<AdjustIngredientsScreen> {
             },
           ),
         ),
-        bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 0),
       ),
     );
   }

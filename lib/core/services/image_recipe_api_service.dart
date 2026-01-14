@@ -3,12 +3,13 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:ai_ruchi/models/image_recipe_response.dart';
 import 'package:ai_ruchi/models/recipe.dart';
+import 'package:ai_ruchi/core/config/env_config.dart';
 import 'package:flutter/foundation.dart';
 
 /// API Service for generating recipes from food ingredient images
 class ImageRecipeApiService {
-  static const String baseUrl =
-      'https://aicook-backend.onrender.com/api/recipe/generate-from-image';
+  /// Get the base URL from environment config
+  static String get baseUrl => EnvConfig.imageRecipeApiBaseUrl;
 
   /// Maximum number of retry attempts
   static const int maxRetries = 2;

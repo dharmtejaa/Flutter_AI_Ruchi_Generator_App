@@ -1,6 +1,7 @@
 import 'package:ai_ruchi/core/services/ad_service.dart';
 import 'package:ai_ruchi/core/services/my_custom_cache_manager.dart';
 import 'package:ai_ruchi/core/utils/app_router.dart';
+import 'package:ai_ruchi/core/config/env_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -15,6 +16,9 @@ import 'providers/saved_recipes_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment configuration from .env file
+  await EnvConfig.load();
 
   // Initialize Mobile Ads
   await AdService().initialize();

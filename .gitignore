@@ -12,6 +12,10 @@
 .swiftpm/
 migrate_working_dir/
 
+# Environment files (contains secrets)
+.env
+*.env.local
+
 # IntelliJ related
 *.iml
 *.ipr
@@ -38,6 +42,7 @@ app.*.symbols
 
 # Obfuscation related
 app.*.map.json
+/debug-info/
 
 # Android Studio will place build artifacts here
 /android/app/debug
